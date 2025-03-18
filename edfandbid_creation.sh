@@ -49,6 +49,9 @@ else
 fi
 
 ########### Run python script that puts everything into BIDs #############################################
+# Install dependencies
+pip install --no-cache-dir -r requirements.txt
+
 python "${modulefolder}/postbids.py" "$inputfolder" "$modulefolder" "$type"
 
 ############ Move reconstruction directory ###############################################################

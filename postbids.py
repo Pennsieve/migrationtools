@@ -156,7 +156,7 @@ def find_files_by_type(folder_path, file_extension):
     
     
 
-def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name):
+def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name, eps_string):
     """ Creates channels.tsv file for all data """
     
     ## NEED TO ADD EEG FOR EEG INPUTS
@@ -237,11 +237,26 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name
     del edffile
             
     for file in found_files:
+        
+        with open(file, 'rb+') as f:
+            new_bytes = eps_string.encode('utf-8') 
+            file_data = f.read()
+            
+            modified_data = file_data[:8] + new_bytes + file_data[8 + 80:]
+
+            f.seek(0)
+            f.write(modified_data)
+            
+            
         edf_file = pyedflib.EdfReader(file)
         edffile = mne.io.read_raw_edf(file)
         run_number =get_run_number_from_file(file)
         # Find duration per edf file and add to overall duration variable 
         total_duration += edffile.times[-1]
+        
+        edffile.info['patient_id'] = eps_string
+
+        edffile.save(file, overwrite=True)
         
         nested_path = nested_dir + '/' + modlevelfolder +'/'
         
@@ -628,14 +643,15 @@ def main():
     create_participants_json(primary_dir)
     os.makedirs(os.path.join(subject_folder + '/Primary/' + nesteddirectory + modlevelfolder), exist_ok=True)
     
+    eps_string = generate_eps_string(pipeline_folder)
+    
     # Process .edf files
-    process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name)
+    process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name, eps_string)
     
     """ Deal with sidecar files (imaging, montages, annotations)"""
     other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date)
     
     
-    eps_string = generate_eps_string(pipeline_folder)
     
     replace_in_directory(subject_folder, eps_string, subject_id)
     
@@ -656,5 +672,4 @@ if __name__ == '__main__':
     main()
     
     
-
         

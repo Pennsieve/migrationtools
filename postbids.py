@@ -618,7 +618,7 @@ def main():
         subject_folder=subject_folder[:-1]
         
     if pipeline_folder.endswith('/'):
-        pipeline_folder=subject_folder[:-1]
+        pipeline_folder=pipeline_folder[:-1]
     
     subject_id = re.sub(r"[^0-9]","", os.path.basename(subject_folder.split("_")[0]))
     subjectid = os.path.basename(subject_folder).split("_")[0]

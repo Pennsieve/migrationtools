@@ -156,14 +156,9 @@ def find_files_by_type(folder_path, file_extension):
     
     
 
-def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name, eps_string):
+def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string):
     """ Creates channels.tsv file for all data """
     
-    ## NEED TO ADD EEG FOR EEG INPUTS
-    if args.type == "ieeg":
-        modlevelfolder = 'ieeg/'
-    elif args.type == "scalp":
-        modlevelfolder = 'eeg/'
 
 
     column_names = ["name","type","units","low_cutoff","high_cutoff","description","sampling_frequency","status","status_description"]
@@ -191,11 +186,11 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name
     for idx, channel in enumerate(edffile.info['chs']):  # Use raw channel data (not just names)
         channel_name = edffile.info['ch_names'][idx]  # Channel name (string)
         """ Find the type and description for each channel """
-        if args.type == 'scalp':
+        if modlevelfolder == 'eeg/':
             typestr = "EEG"
             eegnum += 1
             description = "Electroencephalography"
-        elif args.type == 'ieeg':
+        elif modlevelfolder == 'ieeg/':
             if "grid" in channel_name.lower() or channel['kind'] == mne.io.constants.FIFF.FIFFV_EOG_CH:
                 typestr = "ECOG"
                 ecognum += 1
@@ -240,9 +235,13 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name
         
         with open(file, 'rb+') as f:
             new_bytes = eps_string.encode('utf-8') 
-            file_data = f.read()
+            size_of_new_bytes = len(new_bytes)
+            differencenewbytes = 80- size_of_new_bytes
+            blankbytes = b' ' * differencenewbytes
             
-            modified_data = file_data[:8] + new_bytes + file_data[8 + 80:]
+            file_data = f.read()
+            # Need to write out only 10 bytes but replace 
+            modified_data = file_data[:8] + new_bytes + blankbytes + file_data[8 + 80:]
 
             f.seek(0)
             f.write(modified_data)
@@ -254,9 +253,9 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name
         # Find duration per edf file and add to overall duration variable 
         total_duration += edffile.times[-1]
         
-        edffile.info['patient_id'] = eps_string
+        #edffile.info['patient_id'] = eps_string
 
-        edffile.save(file, overwrite=True)
+        #edffile.save(file, overwrite=True)
         
         nested_path = nested_dir + '/' + modlevelfolder +'/'
         
@@ -646,7 +645,7 @@ def main():
     eps_string = generate_eps_string(pipeline_folder)
     
     # Process .edf files
-    process_edf_files(subject_folder, primary_dir, nested_dir, args, nested_name, eps_string)
+    process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string)
     
     """ Deal with sidecar files (imaging, montages, annotations)"""
     other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date)

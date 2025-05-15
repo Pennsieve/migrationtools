@@ -17,7 +17,7 @@ objectstr="/objects/"
 objectsfolder="${inputfolder}${objectstr}"
 
 ############  Run jar file that converts mef to edf ######################################################
-#java -jar ${modulefolder}/mefstreamer.jar ${inputfolder}
+java -jar ${modulefolder}/mefstreamer.jar ${inputfolder}
 
 
 ############ Delete reconstruction directory ###############################################################
@@ -31,7 +31,7 @@ while IFS= read -r zipfile; do
 done
 
 ############### Remove mef and any other files ###########################################
-#rm -f ${inputfolder}/*.mef
+rm -f ${inputfolder}/*.mef
 rm -f ${inputfolder}/*.xml
 
 ############  Unzip any folders within the input folder ##################################################
@@ -74,8 +74,6 @@ new_path=$(python3 "${modulefolder}/postbids.py" "$inputfolder" "$modulefolder" 
   
 echo "$new_path"
 ############# Remove object folder and move everything else to derivative  ####
-#rm -r ${new_path}/objects
-
-#find ${new_path} -maxdepth 1 -type f -exec mv {} ${new_path}/Derivative \;
+rm -r ${new_path}/objects
 
 echo "Finished edf conversion and bids creation"

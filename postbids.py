@@ -233,18 +233,15 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, n
             
     for file in found_files:
         
-        with open(file, 'rb+') as f:
-            new_bytes = eps_string.encode('utf-8') 
-            size_of_new_bytes = len(new_bytes)
-            differencenewbytes = 80- size_of_new_bytes
-            blankbytes = b' ' * differencenewbytes
-            
-            file_data = f.read()
-            # Need to write out only 10 bytes but replace 
-            modified_data = file_data[:8] + new_bytes + blankbytes + file_data[8 + 80:]
+        new_bytes = eps_string.encode('utf-8')
+        size_of_new_bytes = len(new_bytes)
 
-            f.seek(0)
-            f.write(modified_data)
+        blankbytes = b' ' * (80 - size_of_new_bytes)
+        final_bytes = new_bytes + blankbytes
+
+        with open(file, 'rb+') as f:
+            f.seek(8)
+            f.write(final_bytes)
             
             
         edf_file = pyedflib.EdfReader(file)

@@ -19,39 +19,39 @@ import shutil
 import argparse
 import sys
 import logging
+import hashlib
+
+SES_IMPLANT_FOLDER = "ses-postimplant"
 
 def parse_arguments():
-    """ Parse command line arguments"""
-    # Set up argparse to handle command line arguments
+    """ Parse command line arguments """
     parser = argparse.ArgumentParser(description="Process input folders with a flag for either iEEG or scalp data.")
     
-    # Add arguments for the two folders and the flag
     parser.add_argument('folder1', type=str, help="Path to the subject folder folder")
     parser.add_argument('folder2', type=str, help="Path to the pipeline creation folder")
     parser.add_argument('type', type=str, choices=['ieeg', 'scalp'], help="Flag indicating data type: 'ieeg' or 'scalp'")
+    
+    parser.add_argument('--eps', type=str, default=None, help="Optional EPS ID (e.g. EPS0000166)")
+    parser.add_argument('--day', type=str, default=None, help="Session day identifier (e.g. D02)")
+    parser.add_argument('--keep-temp', action='store_true', help="If set, will not delete temporary folders after merge")
 
-    # Parse the command line arguments
     args = parser.parse_args()
 
-    # Validate if the provided folders exist
-    if not os.path.isdir(args.folder1):
-        #print(f"Error: {args.folder1} is not a valid subject directory.")
-        return
-    if not os.path.isdir(args.folder2):
-        #print(f"Error: {args.folder2} is not a valid pipeline directory.")
-        return
-        
+    if not os.path.isdir(args.folder1) or not os.path.isdir(args.folder2):
+        return None
+    
     return args
+
 
 def create_folder_structure(subject_folder, subjectid):
     """ Creates primary and derivative folder structures"""
-    os.makedirs(os.path.join(subject_folder, 'Primary'), exist_ok=True)
-    os.makedirs(os.path.join(subject_folder, 'Derivative'), exist_ok=True)
+    os.makedirs(os.path.join(subject_folder, 'primary'), exist_ok=True)
+    os.makedirs(os.path.join(subject_folder, 'derivative'), exist_ok=True)
     
-    primary_dir = os.path.join(subject_folder, 'Primary')
-    derivative_dir = os.path.join(subject_folder, 'Derivative')
+    primary_dir = os.path.join(subject_folder, 'primary')
+    derivative_dir = os.path.join(subject_folder, 'derivative')
     ## Nested directory is the primary directory than subject folder than session folder 
-    nested_dir = os.path.join(primary_dir, f'sub-{subjectid}', 'ses-01012000')
+    nested_dir = os.path.join(primary_dir, f'sub-{subjectid}', SES_IMPLANT_FOLDER)
     
     os.makedirs(nested_dir,exist_ok=True)
     
@@ -156,25 +156,26 @@ def find_files_by_type(folder_path, file_extension):
     
     
 
-def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string):
+def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string,pipeline_folder):
     """ Creates channels.tsv file for all data """
     
-
-
     column_names = ["name","type","units","low_cutoff","high_cutoff","description","sampling_frequency","status","status_description"]
     data = []
+    lines = []
     
-        
+    channel_data_file = f"{primary_dir.split('/')[-2]}.txt"
+    channel_data_path = os.path.join(pipeline_folder, channel_data_file)
+    
     """ Process edf files and generate all sidecar files """
-    found_files = find_files_by_type(subject_folder +'/', '.edf')
+    found_files = find_files_by_type(subject_folder +'/', '.mef')
     total_duration = 0
     
     logging.getLogger('pyedflib').setLevel(logging.CRITICAL)
     mne.set_log_level('CRITICAL')
     
 
-    edf_file = pyedflib.EdfReader(found_files[0])
-    edffile = mne.io.read_raw_edf(found_files[0])
+    # edf_file = pyedflib.EdfReader(found_files[0])
+    # edffile = mne.io.read_raw_edf(found_files[0])
         
     ecognum = 0
     ecgnum = 0
@@ -182,87 +183,68 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, n
     eegnum = 0
     eognum = 0
     seegnum = 0 
-    
-    for idx, channel in enumerate(edffile.info['chs']):  # Use raw channel data (not just names)
-        channel_name = edffile.info['ch_names'][idx]  # Channel name (string)
-        """ Find the type and description for each channel """
-        if modlevelfolder == 'eeg/':
-            typestr = "EEG"
-            eegnum += 1
-            description = "Electroencephalography"
-        elif modlevelfolder == 'ieeg/':
-            if "grid" in channel_name.lower() or channel['kind'] == mne.io.constants.FIFF.FIFFV_EOG_CH:
-                typestr = "ECOG"
-                ecognum += 1
-                description = "Electrocorticography"
-            elif channel['kind'] == mne.io.constants.FIFF.FIFFV_ECG_CH:
-                typestr = "ECG"
-                ecgnum += 1
-                description = "Electrocardiography"
-            elif channel['kind'] == mne.io.constants.FIFF.FIFFV_EMG_CH:
-                typestr = "EMG"
-                emgnum += 1
-                description = "Electromyography"
-            elif channel['kind'] == mne.io.constants.FIFF.FIFFV_EOG_CH:
-                typestr = "EOG"
-                eognum += 1
-                description = "Electrooculography"
-            elif channel['kind'] == mne.io.constants.FIFF.FIFFV_EEG_CH:
-                typestr = "SEEG"
-                seegnum += 1
-                description = "Stereoelectroencephalography"
+
+    with open(channel_data_path, 'r') as f:
         
-        units = edf_file.getPhysicalDimension(1)
-        low_cutoff = edffile.info.get('lowpass')
-        high_cutoff = edffile.info.get('highpass')
-        samplingfreq = edffile.info.get('sfreq')
-        ## Add if loop if multiple folders for subject are here 
-            ## add stuff here for channel status if it was removed 
-        data.append([channel_name, typestr, units, low_cutoff, high_cutoff, description, samplingfreq, "good", "n/a"])
+        lines = f.readlines()
+        for line in lines:
+            line_data = line.split(',')
+            channel_name = line_data[0].strip()
+            typestr = line_data[1].strip()
+            units = line_data[2].strip()
+            low_cutoff = line_data[3].strip()
+            high_cutoff = line_data[4].strip()
+            description = line_data[5].strip()
+            samplingfreq = line_data[6].strip()
+            data.append([channel_name, typestr, units, low_cutoff, high_cutoff, description, samplingfreq, "good", "n/a"])
         
-        file_path = os.path.join(nested_dir, modlevelfolder, nested_name + '_channels.tsv')
-        with open(file_path, 'w', newline='') as csvfile:
-            writer = csv.writer(csvfile)
-            writer.writerow(column_names)
-            writer.writerows(data)
+    file_path = os.path.join(nested_dir, modlevelfolder, nested_name + '_channels.tsv')
+    line = lines[0]
+    startTime = int(lines[0].split(',')[8])
+    endTime = int(lines[0].split(',')[7])
+    total_duration = endTime - startTime
+    with open(file_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(column_names)
+        writer.writerows(data)
             
-    edf_file.close()
-    del edf_file
-    edffile.close()
-    del edffile
+    # edf_file.close()
+    # del edf_file
+    # edffile.close()
+    # del edffile
             
     for file in found_files:
         
-        new_bytes = eps_string.encode('utf-8')
-        size_of_new_bytes = len(new_bytes)
+        # new_bytes = eps_string.encode('utf-8')
+        # size_of_new_bytes = len(new_bytes)
 
-        blankbytes = b' ' * (80 - size_of_new_bytes)
-        final_bytes = new_bytes + blankbytes
+        # blankbytes = b' ' * (80 - size_of_new_bytes)
+        # final_bytes = new_bytes + blankbytes
 
-        with open(file, 'rb+') as f:
-            f.seek(8)
-            f.write(final_bytes)
+        # with open(file, 'rb+') as f:
+        #     f.seek(8)
+        #     f.write(final_bytes)
             
             
-        edf_file = pyedflib.EdfReader(file)
-        edffile = mne.io.read_raw_edf(file)
-        run_number =get_run_number_from_file(file)
+        # edf_file = pyedflib.EdfReader(file)
+        # edffile = mne.io.read_raw_edf(file)
+        # run_number =get_run_number_from_file(file)
+        run_number= ""
         # Find duration per edf file and add to overall duration variable 
-        total_duration += edffile.times[-1]
         
-        #edffile.info['patient_id'] = eps_string
+        # edffile.info['patient_id'] = eps_string
 
-        #edffile.save(file, overwrite=True)
+        # edffile.save(file, overwrite=True)
         
         nested_path = nested_dir + '/' + modlevelfolder +'/'
         
         # Move edf files
-        move_edf_file(file, nested_path + '/', nested_name, run_number)
+        move_mef_files(file, nested_path + '/', nested_name, run_number)
         
-        edf_file.close()
-        del edf_file
-        edffile.close()
-        del edffile
+        # edf_file.close()
+        # del edf_file
+        # edffile.close()
+        # del edffile
             
         
     # Generate iEEG json 
@@ -289,13 +271,12 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, n
     with open(os.path.join(nested_dir, modlevelfolder, nested_name  + '_ieeg.json'), 'w') as outfile:
         json.dump(ieeg_json, outfile, indent=4)
 
-
-
-def move_edf_file(file, nested_path, nested_name, run_number):
+def move_mef_files(file, nested_path, nested_name, run_number):
     """ Move edf file to proper location within BIDs"""
-    #edf_filename = os.path.basenmae(file)
-    edf_filename = nested_name + f'_run-{run_number}.edf'
-    os.rename(file, os.path.join(nested_path, edf_filename))
+
+    file_name = os.path.basename(file)
+    # edf_filename = nested_name + f'_run-{run_number}.edf'
+    os.rename(file, os.path.join(nested_path, file_name))
     
         
 
@@ -322,7 +303,7 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
     for filename in os.listdir(pipeline_folder + '/montages'):
         folder_path = os.path.join(pipeline_folder + '/montages/', filename)
         if subjectid in filename:
-            shutil.copy(pipeline_folder + '/montages/' + filename, subject_folder + '/Derivative/' + subjectid + 'montage.json')
+            shutil.copy(pipeline_folder + '/montages/' + filename, subject_folder + '/derivative/' + subjectid + '_montage.json')
     
     """ Find annotation files and place into events.tsv"""
     for filename in os.listdir(pipeline_folder + '/annotations'):
@@ -333,7 +314,7 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
                 annotations =  pd.read_csv(pipeline_folder + '/annotations/' + filename, sep = '\t')
                 annotations = annotations.iloc[:, :-4]
                 annotations = annotations.rename(columns={'description': 'trial_type', 'parent': 'channel'})
-                annotations.to_csv(subject_folder + '/Primary/' + nesteddirectory + modlevelfolder +  '/' + nested_name + '_events.tsv', sep='\t', index=False)
+                annotations.to_csv(subject_folder + '/primary/' + nesteddirectory + modlevelfolder +  '/' + nested_name + '_events.tsv', sep='\t', index=False)
                 annotations_json = {
                     "trial_type": {
                         "LongName": "Event",
@@ -345,179 +326,13 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
                     }
                 }
                 
-                with open(subject_folder + '/Primary/' + nesteddirectory + modlevelfolder + '/' + nested_name + '_events.json', "w") as outfile:
+                with open(subject_folder + '/primary/' + nesteddirectory + modlevelfolder + '/' + nested_name + '_events.json', "w") as outfile:
                     json.dump(annotations_json, outfile, indent=4)
 
 
-        
-     ####################################################################### 
-     #               Finds if imaging exists and properly moves it
-    imaging_directory_found = False
-    run_number_ct = 1
-    # Check if objects folder exists here 
-    object_dir = subject_folder + '/objects'
-    if os.path.isdir(object_dir):
-        for filename in os.listdir(object_dir):
-            folder_path = os.path.join(object_dir, filename)
-            # change the name when unzipped so annoying
-            if "imag" in filename and os.path.isdir(folder_path):
-                #print(filename)
-                imaging_directory_found = True
-                imaging_type = ".nii"
-                imaging_files = find_files_by_type(object_dir + '/' + filename, imaging_type)
-                for imaging in imaging_files:
-                    if "ct" in imaging.lower():
-                        os.chdir(subject_folder + '/Primary/' + nesteddirectory)
-                        if run_number_ct == 1:
-                            os.makedirs('ct', exist_ok=True)
-                        ct_path = subject_folder + '/Primary/' + nesteddirectory + 'ct/' + nested_name + f'_run-{run_number_ct:02d}_ct.nii'
-                        shutil.copy(imaging, ct_path)
-                        ct_json = {
-                        "Modality": "CT",  
-                        "ImagingFrequency": 0,
-                        "Manufacturer": "",
-                        "ManufacturersModelName": "",  
-                        "InstitutionName": "", 
-                        "InstitutionAddress": "", 
-                        "DeviceSerialNumber": "",  
-                        "StationName": "",  
-                        "BodyPartExamined": "",
-                        "PatientPosition": "",  
-                        "SoftwareVersions": "",  
-                        "SeriesDescription": "",  
-                        "ProtocolName": "", 
-                        "ImageType": "",  
-                        "SeriesNumber": "",  
-                        "AcquisitionTime": "",  
-                        "AcquisitionNumber": "",  
-                        "ImageComments": "",  
-                        "ConvolutionKernel": "",  
-                        "ExposureTime": "", 
-                        "XRayTubeCurrent": "",  
-                        "XRayExposure": "", 
-                        "ImageOrientationPatientDICOM": "",  
-                        "ConversionSoftware": "",  
-                        "ConversionSoftwareVersion": ""
-                    }
-                        json_ct = json.dumps(ct_json, indent=4)
-                        # Writing to json
-                        with open(subject_folder + '/Primary/' + nesteddirectory + '/ct/' + nested_name + f'_run-{run_number_ct:02d}_ct.json', "w") as outfile:
-                            outfile.write(json_ct)
-                        run_number_ct += 1
-                        
-                    if any(x in imaging.lower() for x in ["t1", "t2", "flair","mprage"]):
-                        #print("Made it inside imaging loop")
-                        run_number_t2 = 1 
-                        run_number_t1 = 1  
-                        date_pattern = r'(\d{8})'
-                        
-                        match = re.search(date_pattern, imaging)
-                        #If date is in string do this
-                        if match:
-                            date_str = match.group(1)
-                            date_obj = datetime.strptime(date_str, "%Y%m%d")
-                            formatted_date = date_obj.strftime("%m%d%Y")
-                            
-                            folder_path = os.path.join(subject_folder, 'Primary', f'sub-{subjectid}', f'ses-{formatted_date}', 'anat')
-
-                            # Check if the folder exists
-                            if not os.path.exists(folder_path):
-                                os.makedirs(folder_path, exist_ok=True)
-                            
-                            rootmri = subject_folder  + '/Primary/sub-' + subjectid + '/ses-' + formatted_date + '/anat/sub-' + subjectid + '_ses-' + formatted_date
-                    
-                            
-                        # If no date in string search the participants tsv to find date
-                        else:                    
-                            if run_number_t2 == 1 and run_number_t2 == 1:
-                        
-                                datemriobj = datetime.strptime(mri_date, "%m/%d/%y")
-                                formatted_date = datemriobj.strftime("%m%d%Y")
-                            
-                                os.makedirs(subject_folder + '/Primary/sub-' + subjectid + '/ses-' + formatted_date + '/anat', exist_ok=True)
-                                rootmri = subject_folder  + '/Primary/sub-' + subjectid + '/ses-' + formatted_date + '/anat/sub-' + subjectid + '_ses-' + formatted_date
-                        
-                        if "t2" in imaging.lower():
-                            mri_path = rootmri + f'_run-{run_number_t2:02d}_T2.nii'
-                            shutil.copy(imaging, mri_path)
-                            jsonpath = rootmri + f'_run-{run_number_t2:02d}_T2.json'
-                            run_number_t2 += 1  
-                        else: 
-                            mri_path = rootmri + f'_run-{run_number_t1:02d}_T1w.nii'
-                            shutil.copy(imaging, mri_path)
-                            jsonpath = rootmri + f'_run-{run_number_t1:02d}_T1w.json'
-                            run_number_t1 += 1
-                        mri_json = {
-                        "Modality": "MR",
-                        "MagneticFieldStrength": "",
-                        "ImagingFrequency": "",
-                        "Manufacturer": "",
-                        "ManufacturersModelName": "",
-                        "InstitutionName": "",
-                        "InstitutionalDepartmentName": "",
-                        "InstitutionAddress": "",
-                        "DeviceSerialNumber": "",
-                        "StationName": "",
-                        "BodyPartExamined": "",
-                        "PatientPosition": "",
-                        "ProcedureStepDescription": "",
-                        "SoftwareVersions": "",
-                        "MRAcquisitionType": "",
-                        "SeriesDescription": "",
-                        "ProtocolName": "",
-                        "ScanningSequence": "",
-                        "SequenceVariant": "",
-                        "ScanOptions": "",
-                        "SequenceName": "",
-                        "ImageType": [""
-                        ],
-                        "NonlinearGradientCorrection": "",
-                        "SeriesNumber": "",
-                        "AcquisitionTime": "",
-                        "AcquisitionNumber": "",
-                        "SliceThickness": "",
-                        "SAR": "",
-                        "EchoTime": "",
-                        "RepetitionTime": "",
-                        "InversionTime": "",
-                        "FlipAngle": "",
-                        "PartialFourier": "",
-                        "BaseResolution": "",
-                        "ShimSetting": [""
-                        ],
-                        "TxRefAmp": "",
-                        "PhaseResolution": "",
-                        "ReceiveCoilName": "",
-                        "CoilString": "",
-                        "PulseSequenceDetails": "",
-                        "CoilCombinationMethod": "",
-                        "MatrixCoilMode": "",
-                        "PercentPhaseFOV": "",
-                        "PercentSampling": "",
-                        "PhaseEncodingSteps": "",
-                        "AcquisitionMatrixPE": "",
-                        "ReconMatrixPE": "",
-                        "PixelBandwidth": "",
-                        "DwellTime": "",
-                        "ImageOrientationPatientDICOM": [""
-                        ],
-                        "ImageOrientationText": "",
-                        "InPlanePhaseEncodingDirectionDICOM": "",
-                        "ConversionSoftware": "",
-                        "ConversionSoftwareVersion": ""
-                    }
-                        
-                        json_mri = json.dumps(mri_json, indent=4)
-                        # Writing to json, UPDATE THE SESSION LEVEL FOLDER !!!!
-                        with open(jsonpath, "w") as outfile:
-                            outfile.write(json_mri)
-
-   # if not imaging_directory_found: 
-        #print("No imaging directory found")
-
 def generate_eps_string(pipeline_folder):
     # Path to the CSV file
-    epscsv = pipeline_folder + "/epsnumber.csv"
+    epscsv = pipeline_folder + "/epsnumber_sub.csv"
     
     # Read the CSV file and get the number from the first column
     with open(epscsv, newline='', encoding='utf-8-sig') as csvfile:
@@ -531,12 +346,13 @@ def generate_eps_string(pipeline_folder):
     # Create the string with the required formatting
     eps_string = f"EPS{str(number).zfill(7)}"  # zfill will add leading zeros to make the string 7 digits
     
-    new_num = str(number)
+
 
     # Write the updated number back to the CSV file
+    print (f"About to write: {number}----")
+    print("Wrote line")
     with open(epscsv, mode='w', newline='') as csvfile:
-        csvwriter = csv.writer(csvfile)
-        csvwriter.writerows(new_num)
+        csvfile.writelines(str(number))
         
         
     return eps_string
@@ -603,7 +419,25 @@ def update_participants_tsv(primary_dir, eps_string):
     # Delete the original CSV file
     os.remove(participants_file_path)
     
-     
+def clean_up(new_path):
+    """
+    Move any file that is not 'README.txt' into the 'derivative' folder
+    """
+    derivative_path = os.path.join(new_path, "derivative")
+    os.makedirs(derivative_path, exist_ok=True)  # Ensure derivative folder exists
+
+    # Get all files in root which are not README.txt
+    files_to_move = [
+        f for f in os.listdir(new_path)
+        if os.path.isfile(os.path.join(new_path, f)) and f != "README.txt"
+    ]
+
+    # Move each file to derivative
+    for f in files_to_move:
+        src = os.path.join(new_path, f)
+        dst = os.path.join(derivative_path, f)
+        shutil.move(src, dst)
+
 def main():
     # Define arguments 
     args = parse_arguments()
@@ -618,10 +452,10 @@ def main():
     
     subject_id = re.sub(r"[^0-9]","", os.path.basename(subject_folder.split("_")[0]))
     subjectid = os.path.basename(subject_folder).split("_")[0]
-    nested_name = "sub-" + subjectid + '_ses-01012000'
+    nested_name = "sub-" + subjectid + SES_IMPLANT_FOLDER # Implant
     
     subjectlevelfolder = 'sub-' + subjectid
-    sessionlevelfolder = 'ses-01012000'
+    sessionlevelfolder = SES_IMPLANT_FOLDER
     
     if args.type == "ieeg":
         modlevelfolder = 'ieeg/'
@@ -633,16 +467,16 @@ def main():
     
     # Create folder structure and BIDs files
     primary_dir, nested_dir, derivative_dir = create_folder_structure(subject_folder, subjectid)
-    create_readme_file(subject_folder)
+    # create_readme_file(subject_folder)
     mri_date = create_participants_file(subject_folder, primary_dir, pipeline_folder)
     create_dataset_description(primary_dir)
     create_participants_json(primary_dir)
-    os.makedirs(os.path.join(subject_folder + '/Primary/' + nesteddirectory + modlevelfolder), exist_ok=True)
+    os.makedirs(os.path.join(subject_folder + '/primary/' + nesteddirectory + modlevelfolder), exist_ok=True)
     
     eps_string = generate_eps_string(pipeline_folder)
     
     # Process .edf files
-    process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string)
+    process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string,pipeline_folder)
     
     """ Deal with sidecar files (imaging, montages, annotations)"""
     other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date)
@@ -660,6 +494,7 @@ def main():
     # Create the full new path
     new_path = os.path.join(parent_dir, new_directory_name)
     os.rename(subject_folder, new_path)
+    clean_up(new_path)
     
     #print(new_path)
     sys.stdout.write(new_path) 

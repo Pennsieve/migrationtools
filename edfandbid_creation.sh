@@ -17,7 +17,7 @@ objectstr="/objects/"
 objectsfolder="${inputfolder}${objectstr}"
 
 ############  Run jar file that converts mef to edf ######################################################
-java -jar ${modulefolder}/mefstreamer.jar ${inputfolder}
+java -jar ${modulefolder}/mefHeaderInfo.jar ${inputfolder}
 
 
 ############ Delete reconstruction directory ###############################################################
@@ -31,8 +31,8 @@ while IFS= read -r zipfile; do
 done
 
 ############### Remove mef and any other files ###########################################
-rm -f ${inputfolder}/*.mef
-rm -f ${inputfolder}/*.xml
+# rm -f ${inputfolder}/*.mef
+# rm -f ${inputfolder}/*.xml
 
 ############  Unzip any folders within the input folder ##################################################
 # Debugging: List the zip files found in the input folder
@@ -69,7 +69,7 @@ fi
 
 ########### Run python script that puts everything into BIDs #############################################
 # Install dependencies
-pip3 install --no-cache-dir -r /home/ec2-user/migrationtools/requirements.txt
+# pip3 install --no-cache-dir -r ~/Documents/code/migrationtools/requirements.txt
 new_path=$(python3 "${modulefolder}/postbids.py" "$inputfolder" "$modulefolder" "$type" | xargs)
   
 echo "$new_path"

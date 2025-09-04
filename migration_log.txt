@@ -1,0 +1,78 @@
+2025-09-02 14:42:36  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-02 14:42:40 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 14:42:46 Step 3: Running edfandbid_creation.sh
+2025-09-02 14:42:46 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 15:04:09  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-02 15:04:14 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 15:04:19 Step 3: Running edfandbid_creation.sh
+2025-09-02 15:04:19 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 15:04:24  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
+2025-09-02 15:04:28 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-02 15:04:33 Step 3: Running edfandbid_creation.sh
+2025-09-02 15:04:33 Conversion successful for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-02 15:04:38  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
+2025-09-02 15:04:42 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
+2025-09-02 15:04:47 Step 3: Running edfandbid_creation.sh
+2025-09-02 15:04:47 Conversion successful for 'PRV-001-13UL-06'. Sleeping for 5 seconds
+2025-09-02 15:04:52  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
+2025-09-02 15:04:56 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
+2025-09-02 15:35:12  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-02 15:35:17 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 15:35:22 Step 3: Running edfandbid_creation.sh
+2025-09-02 15:35:22 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 15:35:27  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
+2025-09-02 15:35:30  Download failed for 'PRV-001-13UL-04'
+2025-09-02 15:35:30  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
+2025-09-02 15:35:34 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
+2025-09-02 16:40:17  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-02 16:40:22 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 16:40:27 Step 3: Running edfandbid_creation.sh
+2025-09-02 16:40:34 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-02 16:40:39  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
+2025-09-02 16:40:43 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-02 16:40:48 Step 3: Running edfandbid_creation.sh
+2025-09-02 16:40:48 Conversion successful for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-04 14:07:00  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-04 14:07:13 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-04 14:07:18  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
+2025-09-04 14:07:29 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-04 14:07:34  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
+2025-09-04 14:07:44 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
+2025-09-04 14:07:49  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
+2025-09-04 14:07:59 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
+2025-09-04 14:08:04  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-10
+2025-09-04 14:08:15 Download complete for 'PRV-001-13UL-10'. Sleeping for 5 seconds
+2025-09-04 14:08:20  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-12
+2025-09-04 14:08:43  Download failed for 'PRV-001-13UL-12'
+2025-09-04 14:08:43  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-15
+2025-09-04 14:08:47  Download failed for 'PRV-001-13UL-15'
+2025-09-04 14:08:47  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-18
+2025-09-04 14:08:49  Download failed for 'PRV-001-13UL-18'
+2025-09-04 14:08:49  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-21
+2025-09-04 14:08:51  Download failed for 'PRV-001-13UL-21'
+2025-09-04 14:08:51  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-24
+2025-09-04 14:08:52  Download failed for 'PRV-001-13UL-24'
+2025-09-04 14:28:48  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-04 14:28:59 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-04 14:29:04  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
+2025-09-04 14:29:14 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
+2025-09-04 14:29:19  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
+2025-09-04 14:29:28 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
+2025-09-04 14:29:33  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
+2025-09-04 14:29:43 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
+2025-09-04 14:29:48  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-10
+2025-09-04 14:29:59 Download complete for 'PRV-001-13UL-10'. Sleeping for 5 seconds
+2025-09-04 14:30:04  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-12
+2025-09-04 14:30:29 Download complete for 'PRV-001-13UL-12'. Sleeping for 5 seconds
+2025-09-04 14:30:34  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-15
+2025-09-04 14:30:43 Download complete for 'PRV-001-13UL-15'. Sleeping for 5 seconds
+2025-09-04 14:30:48  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-18
+2025-09-04 14:30:57 Download complete for 'PRV-001-13UL-18'. Sleeping for 5 seconds
+2025-09-04 14:31:02  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-21
+2025-09-04 14:31:12 Download complete for 'PRV-001-13UL-21'. Sleeping for 5 seconds
+2025-09-04 14:31:17  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-24
+2025-09-04 14:31:26 Download complete for 'PRV-001-13UL-24'. Sleeping for 5 seconds
+2025-09-04 14:39:17  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-04 14:39:29 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-04 14:39:34 Step 3: Running edfandbid_creation.sh
+2025-09-04 14:39:34 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds

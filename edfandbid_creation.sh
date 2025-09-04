@@ -36,36 +36,36 @@ done
 
 ############  Unzip any folders within the input folder ##################################################
 # Debugging: List the zip files found in the input folder
-imagstring="/imaging/"
-mkdir ${objectsfolder}/imaging
-echo "Looking for zip files in $objectsfolder"
+# imagstring="/imaging/"
+# mkdir ${objectsfolder}/imaging
+# echo "Looking for zip files in $objectsfolder"
 
-find "$objectsfolder" -type f -name "*.zip" -print
-find "$objectsfolder" -type f -name "*.zip" | while IFS= read -r file; do
-  echo "Unzipping: $file"
+# find "$objectsfolder" -type f -name "*.zip" -print
+# find "$objectsfolder" -type f -name "*.zip" | while IFS= read -r file; do
+#   echo "Unzipping: $file"
   
-  # Unzip each zip file into its own directory
-  #unzip -o -q "$file" -d "$(dirname "$file")" && echo "Successfully unzipped: $file" || echo "Failed to unzip: $file"
-  unzip -o -q "$file" -d "$(dirname "$file")/$imagstring" && echo "Successfully unzipped: $file" || echo "Failed to unzip: $file"
+#   # Unzip each zip file into its own directory
+#   #unzip -o -q "$file" -d "$(dirname "$file")" && echo "Successfully unzipped: $file" || echo "Failed to unzip: $file"
+#   unzip -o -q "$file" -d "$(dirname "$file")/$imagstring" && echo "Successfully unzipped: $file" || echo "Failed to unzip: $file"
 
-done
+# done
 
-find "$objectsfolder" -type d -name "*MACOSX*" -print0 | xargs -0 rm -rf
+# find "$objectsfolder" -type d -name "*MACOSX*" -print0 | xargs -0 rm -rf
 
-########### If imaging folder exists, unzip any files ####################################################
-imagingfolder=$(find "$objectsfolder" -type d -iname "*imag*")
-echo "Imaging folder found: $imagingfolder"  # Debugging line
-if [ -z "$imagingfolder" ]; then
-   echo "No imaging folder found"
-else
-  cd "$imagingfolder"
-  find . -mindepth 2 -type f -exec mv {} "${objectsfolder}/imaging/" \;
-  for file in *.nii.gz; do
-     gunzip "$file"
-  done
-  cd ..
-  rm -f ${imagingfolder}.zip
-fi
+# ########### If imaging folder exists, unzip any files ####################################################
+# imagingfolder=$(find "$objectsfolder" -type d -iname "*imag*")
+# echo "Imaging folder found: $imagingfolder"  # Debugging line
+# if [ -z "$imagingfolder" ]; then
+#    echo "No imaging folder found"
+# else
+#   cd "$imagingfolder"
+#   find . -mindepth 2 -type f -exec mv {} "${objectsfolder}/imaging/" \;
+#   for file in *.nii.gz; do
+#      gunzip "$file"
+#   done
+#   cd ..
+#   rm -f ${imagingfolder}.zip
+# fi
 
 ########### Run python script that puts everything into BIDs #############################################
 # Install dependencies

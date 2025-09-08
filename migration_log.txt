@@ -1,78 +1,429 @@
-2025-09-02 14:42:36  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-02 14:42:40 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 14:42:46 Step 3: Running edfandbid_creation.sh
-2025-09-02 14:42:46 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 15:04:09  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-02 15:04:14 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 15:04:19 Step 3: Running edfandbid_creation.sh
-2025-09-02 15:04:19 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 15:04:24  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
-2025-09-02 15:04:28 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-02 15:04:33 Step 3: Running edfandbid_creation.sh
-2025-09-02 15:04:33 Conversion successful for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-02 15:04:38  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
-2025-09-02 15:04:42 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
-2025-09-02 15:04:47 Step 3: Running edfandbid_creation.sh
-2025-09-02 15:04:47 Conversion successful for 'PRV-001-13UL-06'. Sleeping for 5 seconds
-2025-09-02 15:04:52  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
-2025-09-02 15:04:56 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
-2025-09-02 15:35:12  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-02 15:35:17 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 15:35:22 Step 3: Running edfandbid_creation.sh
-2025-09-02 15:35:22 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 15:35:27  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
-2025-09-02 15:35:30  Download failed for 'PRV-001-13UL-04'
-2025-09-02 15:35:30  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
-2025-09-02 15:35:34 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
-2025-09-02 16:40:17  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-02 16:40:22 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 16:40:27 Step 3: Running edfandbid_creation.sh
-2025-09-02 16:40:34 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-02 16:40:39  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
-2025-09-02 16:40:43 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-02 16:40:48 Step 3: Running edfandbid_creation.sh
-2025-09-02 16:40:48 Conversion successful for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-04 14:07:00  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-04 14:07:13 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-04 14:07:18  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
-2025-09-04 14:07:29 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-04 14:07:34  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
-2025-09-04 14:07:44 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
-2025-09-04 14:07:49  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
-2025-09-04 14:07:59 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
-2025-09-04 14:08:04  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-10
-2025-09-04 14:08:15 Download complete for 'PRV-001-13UL-10'. Sleeping for 5 seconds
-2025-09-04 14:08:20  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-12
-2025-09-04 14:08:43  Download failed for 'PRV-001-13UL-12'
-2025-09-04 14:08:43  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-15
-2025-09-04 14:08:47  Download failed for 'PRV-001-13UL-15'
-2025-09-04 14:08:47  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-18
-2025-09-04 14:08:49  Download failed for 'PRV-001-13UL-18'
-2025-09-04 14:08:49  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-21
-2025-09-04 14:08:51  Download failed for 'PRV-001-13UL-21'
-2025-09-04 14:08:51  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-24
-2025-09-04 14:08:52  Download failed for 'PRV-001-13UL-24'
-2025-09-04 14:28:48  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-04 14:28:59 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-04 14:29:04  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-04
-2025-09-04 14:29:14 Download complete for 'PRV-001-13UL-04'. Sleeping for 5 seconds
-2025-09-04 14:29:19  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-06
-2025-09-04 14:29:28 Download complete for 'PRV-001-13UL-06'. Sleeping for 5 seconds
-2025-09-04 14:29:33  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-07
-2025-09-04 14:29:43 Download complete for 'PRV-001-13UL-07'. Sleeping for 5 seconds
-2025-09-04 14:29:48  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-10
-2025-09-04 14:29:59 Download complete for 'PRV-001-13UL-10'. Sleeping for 5 seconds
-2025-09-04 14:30:04  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-12
-2025-09-04 14:30:29 Download complete for 'PRV-001-13UL-12'. Sleeping for 5 seconds
-2025-09-04 14:30:34  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-15
-2025-09-04 14:30:43 Download complete for 'PRV-001-13UL-15'. Sleeping for 5 seconds
-2025-09-04 14:30:48  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-18
-2025-09-04 14:30:57 Download complete for 'PRV-001-13UL-18'. Sleeping for 5 seconds
-2025-09-04 14:31:02  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-21
-2025-09-04 14:31:12 Download complete for 'PRV-001-13UL-21'. Sleeping for 5 seconds
-2025-09-04 14:31:17  Downloading from s3://org-ieeg-data/Human_Data/prevent_001/PRV-001-13UL-24
-2025-09-04 14:31:26 Download complete for 'PRV-001-13UL-24'. Sleeping for 5 seconds
-2025-09-04 14:39:17  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
-2025-09-04 14:39:29 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
-2025-09-04 14:39:34 Step 3: Running edfandbid_creation.sh
-2025-09-04 14:39:34 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-05 11:13:54  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-05 11:13:59 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-05 11:14:04 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-05 11:14:04 Step 3: Running edfandbid_creation.sh
+2025-09-05 11:14:07 Conversion successful for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+=== Folder structure after BIDS conversion ===
+/Users/zhousk/data/EPS0000001  [error opening dir]
+
+0 directories, 0 files
+2025-09-05 11:50:40  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+├── T8.mef
+├── derivative
+└── primary
+    ├── dataset_description.json
+    ├── partcipants.json
+    └── sub-PRV-001-13UL-03
+        └── ses-postimplant
+            └── ieeg
+
+6 directories, 25 files
+=========================================
+2025-09-05 11:50:45 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-05 11:50:50 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+/Users/zhousk/data/EPS0000001  [error opening dir]
+
+0 directories, 0 files
+2025-09-08 10:51:47  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 10:51:58 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+2025-09-08 10:52:03 Running edfandbid_creation.sh
+2025-09-08 10:52:05  Conversion failed for 'PRV-001-13UL-03'
+2025-09-08 11:35:55  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+├── T8.mef
+├── derivative
+└── primary
+    ├── dataset_description.json
+    ├── partcipants.json
+    └── sub-PRV-001-13UL-03
+        └── ses-postimplant
+            └── ieeg
+
+6 directories, 25 files
+=========================================
+2025-09-08 11:36:10 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 11:36:15 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+2025-09-08 11:36:29  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 11:36:43 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 11:36:48 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+2025-09-08 11:43:17  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 11:43:36 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 11:43:41 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+2025-09-08 13:22:26  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 13:22:37 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 13:22:42 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+2025-09-08 14:33:36  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 14:33:47 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 14:33:52 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+2025-09-08 15:15:47  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+2025-09-08 15:15:58  Download failed for 'PRV-001-13UL-03'
+2025-09-08 15:16:13  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 15:16:17 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 15:16:22 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+N/A  [error opening dir]
+
+0 directories, 0 files
+2025-09-08 15:20:48  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 15:20:53 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 15:20:58 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+N/A  [error opening dir]
+
+0 directories, 0 files
+2025-09-08 15:32:57  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 15:33:04 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 15:33:09 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+N/A  [error opening dir]
+
+0 directories, 0 files
+2025-09-08 15:44:55  Downloading from s3://org-ieeg-data/Human_Data/jacb/PRV-001-13UL-03
+=== Folder structure after AWS download ===
+/Users/zhousk/data/PRV-001-13UL-03
+├── A1.mef
+├── A2.mef
+├── C3.mef
+├── C4.mef
+├── Cz.mef
+├── EKG1.mef
+├── EKG2.mef
+├── F3.mef
+├── F4.mef
+├── F7.mef
+├── F8.mef
+├── Fp1.mef
+├── Fp2.mef
+├── Fz.mef
+├── O1.mef
+├── O2.mef
+├── P3.mef
+├── P4.mef
+├── P7.mef
+├── P8.mef
+├── Pz.mef
+├── T7.mef
+└── T8.mef
+
+1 directory, 23 files
+=========================================
+2025-09-08 15:44:59 Download complete for 'PRV-001-13UL-03'. Sleeping for 5 seconds
+WARNING: EPS_TRACKER_FILE not found or inaccessible
+2025-09-08 15:45:04 Running edfandbid_creation.sh
+=== Folder structure after BIDS conversion ===
+N/A  [error opening dir]
+
+0 directories, 0 files

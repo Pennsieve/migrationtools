@@ -1,4 +1,7 @@
 .DS_Store
 .env
 migration_paths.csv
+migration_log.txt
+migration_results.csv
 epsnumber.csv
+

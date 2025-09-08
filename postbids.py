@@ -23,17 +23,17 @@ import hashlib
 
 SES_IMPLANT_FOLDER = "ses-postimplant"
 
+
+# convert bash user command-line input into python 
 def parse_arguments():
     """ Parse command line arguments """
     parser = argparse.ArgumentParser(description="Process input folders with a flag for either iEEG or scalp data.")
     
-    parser.add_argument('folder1', type=str, help="Path to the subject folder folder")
+    parser.add_argument('folder1', type=str, help="Path to the subject folder")
     parser.add_argument('folder2', type=str, help="Path to the pipeline creation folder")
     parser.add_argument('type', type=str, choices=['ieeg', 'scalp'], help="Flag indicating data type: 'ieeg' or 'scalp'")
     
-    # --- edited out by sz on 09/04/25 to remove EPS-related code 
-    # parser.add_argument('--eps', type=str, default=None, help="Optional EPS ID (e.g. EPS0000166)")
-    
+    parser.add_argument('--eps', type=str, default=None, help="Optional EPS ID (e.g. EPS0000166)")
     parser.add_argument('--day', type=str, default=None, help="Session day identifier (e.g. D02)")
     parser.add_argument('--keep-temp', action='store_true', help="If set, will not delete temporary folders after merge")
 
@@ -42,6 +42,16 @@ def parse_arguments():
     if not os.path.isdir(args.folder1) or not os.path.isdir(args.folder2):
         return None
     
+    # DEBUG prints 
+    print("=== Parsed Arguments ===")
+    print(f"folder1:   {args.folder1}")
+    print(f"folder2:   {args.folder2}")
+    print(f"type:      {args.type}")
+    print(f"eps:       {args.eps if args.eps else 'None'}")
+    print(f"day:       {args.day if args.day else 'None'}")
+    print("========================")
+    # DEBUG END
+
     return args
 
 
@@ -56,21 +66,34 @@ def create_folder_structure(subject_folder, subjectid):
     nested_dir = os.path.join(primary_dir, f'sub-{subjectid}', SES_IMPLANT_FOLDER)
     
     os.makedirs(nested_dir,exist_ok=True)
+
+    # DEBUG prints
+    print("=== Created Folder Structure ===")
+    print(f"subject_folder: {subject_folder}")
+    print(f"subjectid: {subjectid}")
+    print(f"primary_dir: {primary_dir}")
+    print(f"nested_dir:  {nested_dir}")
+    print(f"derivative_dir: {derivative_dir}")
+    print("========================")
+    # DEBUG END
     
     return primary_dir, nested_dir, derivative_dir
 
 
-def create_readme_file(subject_folder):
-    """ Makes README.txt file in primary dir"""
-    readme_content = '''References ---------- 
-    Appelhoff, S., Sanderson, M., Brooks, T., Vliet, M., Quentin, R., Holdgraf, C., Chaumon, M., Mikulan, E., 
-    Tavabi, K., Höchenberger, R., Welke, D., Brunner, C., Rockhill, A., Larson, E., Gramfort, A. and Jas, M. 
-    (2019). MNE-BIDS: Organizing electrophysiological data into the BIDS format and facilitating their analysis. 
-    Journal of Open Source Software 4: (1896). https://doi.org/10.21105/joss.01896'''
+# commented out because main() was not using this function 
+# def create_readme_file(subject_folder):
+#     """ Makes README.txt file in primary dir"""
+#     readme_content = '''References ---------- 
+#     Appelhoff, S., Sanderson, M., Brooks, T., Vliet, M., Quentin, R., Holdgraf, C., Chaumon, M., Mikulan, E., 
+#     Tavabi, K., Höchenberger, R., Welke, D., Brunner, C., Rockhill, A., Larson, E., Gramfort, A. and Jas, M. 
+#     (2019). MNE-BIDS: Organizing electrophysiological data into the BIDS format and facilitating their analysis. 
+#     Journal of Open Source Software 4: (1896). https://doi.org/10.21105/joss.01896'''
 
-    with open(os.path.join(subject_folder, 'README.txt'), 'w') as f:
-        f.write(readme_content)
+#     with open(os.path.join(subject_folder, 'README.txt'), 'w') as f:
+#         f.write(readme_content)
 
+
+# !! related to deidentified_data.csv         
 def create_participants_file(subject_folder, primary_dir, pipeline_folder):
     """ Creates participants.tsv file """
     deiddata =  pd.read_csv(os.path.join(pipeline_folder, 'deidentified_data.csv'), encoding='latin1')
@@ -86,9 +109,9 @@ def create_participants_file(subject_folder, primary_dir, pipeline_folder):
    # else:
         #print(f"'{subject_id}' not found in the first column.")
         
-    
     return mri_date
-        
+
+
 def create_dataset_description(primary_dir):
     """ Create dataset_description.json"""
     dataset_description = {
@@ -100,13 +123,13 @@ def create_dataset_description(primary_dir):
                 "Authors": [
                     "[Unspecified]"
                 ]
-                }
-    
+                }   
     # Writing to json
     with open(os.path.join(primary_dir, "dataset_description.json"), "w") as outfile:
         json.dump(dataset_description, outfile, indent =4)
         
 
+# !! created participants.json is the same for all participants. Need to change?
 def create_participants_json(primary_dir):
     """ Create participants.json"""
     ## Needs to be improved significantly !!!!
@@ -142,12 +165,12 @@ def create_participants_json(primary_dir):
         "Units": "m"
     }
 }
-
-
     # Writing to json
     with open(os.path.join(primary_dir,"partcipants.json"), "w") as outfile:
         json.dump(participantsjson, outfile, indent=4) 
         
+
+# bundled up with process_edf_files() below 
 def find_files_by_type(folder_path, file_extension):
     """ Find files of a certain type in a directory """
     if not os.path.isdir(folder_path):
@@ -155,26 +178,42 @@ def find_files_by_type(folder_path, file_extension):
         return []
     
     return glob.glob(os.path.join(folder_path, f"*{file_extension}"))
+
+
+# bundled up with process_edf_files() below 
+def move_mef_files(file, nested_path, nested_name, run_number):
+    """ Move edf file to proper location within BIDs"""
+
+    file_name = os.path.basename(file)
+    os.rename(file, os.path.join(nested_path, file_name))
     
 
-# --------- updated the process_edf_files func to remove eps-related codes by sz 
-def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name,pipeline_folder):
-    """ Creates channels.tsv file for all data """
+def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, pipeline_folder):
     
+    # TASK 1: creates a _channels.tsv file 
+    # os.path.join a channel_data_path (within which should contains a .txt file)
     column_names = ["name","type","units","low_cutoff","high_cutoff","description","sampling_frequency","status","status_description"]
     data = []
     lines = []
     
     channel_data_file = f"{primary_dir.split('/')[-2]}.txt"
     channel_data_path = os.path.join(pipeline_folder, channel_data_file)
-    
-    """ Process edf files and generate all sidecar files """
+
+    # DEBUG: checking if the channel data file exists 
+    print("=== Check channel data file ===")
+    print(f"Channel data file: {channel_data_file}")
+    print(f"Channel data path: {channel_data_path}")
+    print("===============================")
+    # DEBUG END 
+
+    # TASK 2: process edf files and generate all sidecar files
+    # find all .mef files in the subject folder (/data/PRV-XXX-XXXX-XX)
     found_files = find_files_by_type(subject_folder +'/', '.mef')
     total_duration = 0
     
     logging.getLogger('pyedflib').setLevel(logging.CRITICAL)
     mne.set_log_level('CRITICAL')
-    
+        
     ecognum = 0
     ecgnum = 0
     emgnum = 0
@@ -182,243 +221,138 @@ def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, n
     eognum = 0
     seegnum = 0 
 
-    with open(channel_data_path, 'r') as f:
-        
-        lines = f.readlines()
-        for line in lines:
-            line_data = line.split(',')
-            channel_name = line_data[0].strip()
-            typestr = line_data[1].strip()
-            units = line_data[2].strip()
-            low_cutoff = line_data[3].strip()
-            high_cutoff = line_data[4].strip()
-            description = line_data[5].strip()
-            samplingfreq = line_data[6].strip()
-            data.append([channel_name, typestr, units, low_cutoff, high_cutoff, description, samplingfreq, "good", "n/a"])
-        
-    file_path = os.path.join(nested_dir, modlevelfolder, nested_name + '_channels.tsv')
-    line = lines[0]
-    startTime = int(lines[0].split(',')[8])
-    endTime = int(lines[0].split(',')[7])
-    total_duration = endTime - startTime
-    with open(file_path, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(column_names)
-        writer.writerows(data)
-        
+    # TASK 1: reads channel metadata from the PRV-XXX-XXXX-XX.txt file in channel_data_path to create a channels.tsv
+    if os.path.isfile(channel_data_path):
+        with open(channel_data_path, 'r') as f:
             
+            lines = f.readlines()
+            for line in lines:
+                line_data = line.split(',')
+                channel_name = line_data[0].strip()
+                typestr = line_data[1].strip()
+                units = line_data[2].strip()
+                low_cutoff = line_data[3].strip()
+                high_cutoff = line_data[4].strip()
+                description = line_data[5].strip()
+                samplingfreq = line_data[6].strip()
+                data.append([channel_name, typestr, units, low_cutoff, high_cutoff, description, samplingfreq, "good", "n/a"])
+
+        # !! TASK 1: writes the sub-PRV-XXX-XXXX-XX-postimplant_channels.tsv file under <nested_dir>/<modlevelfolder>
+        file_path = os.path.join(nested_dir, modlevelfolder, nested_name + '_channels.tsv')
+        line = lines[0]
+        startTime = int(lines[0].split(',')[8])
+        endTime = int(lines[0].split(',')[7])
+        total_duration = endTime - startTime
+        with open(file_path, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            writer.writerow(column_names)
+            writer.writerows(data)
+    else:
+        print("WARNING: channel data txt not found in pipeline_folder, skipping step to create _channel.tsv")
+
+    # TASK 2: move the .mef files under subject_folder to the <nested_dir>/<modlevelfolder>
     for file in found_files:
-        run_number= ""
+        run_number= "" 
         nested_path = nested_dir + '/' + modlevelfolder +'/'
-        
         # Move edf files
         move_mef_files(file, nested_path + '/', nested_name, run_number)
-        
+
+    # !! TASK 3: generate an _ieeg.json file with metadata using the pipeline_folder/PRV-XXX-XXXX-XX.txt file 
     # Generate iEEG json 
-    ieeg_json =  {
-        "TaskName": "rest",
-        "Manufacturer": "n/a",
-        "PowerLineFrequency": "n/a",
-        "SamplingFrequency": samplingfreq,
-        "SoftwareFilters": "n/a",
-        "RecordingDuration": total_duration,
-        "RecordingType": "continuous",
-        "iEEGReference": "n/a",
-        "ECOGChannelCount": ecognum,
-        "SEEGChannelCount": seegnum,
-        "EEGChannelCount": eegnum,
-        "EOGChannelCount": eognum,
-        "ECGChannelCount": ecgnum,
-        "EMGChannelCount": emgnum,
-        "MiscChannelCount": 0,
-        "TriggerChannelCount": 0
-        }
-    
-   # with open(os.path.join(nested_dir, modlevelfolder, nested_name + '_' + f'{run_number}_ieeg.json'), 'w') as outfile:
-    with open(os.path.join(nested_dir, modlevelfolder, nested_name  + '_ieeg.json'), 'w') as outfile:
-        json.dump(ieeg_json, outfile, indent=4)
+    if os.path.isfile(channel_data_path):
+        ieeg_json =  {
+            "TaskName": "rest",
+            "Manufacturer": "n/a",
+            "PowerLineFrequency": "n/a",
+            "SamplingFrequency": samplingfreq,
+            "SoftwareFilters": "n/a",
+            "RecordingDuration": total_duration,
+            "RecordingType": "continuous",
+            "iEEGReference": "n/a",
+            "ECOGChannelCount": ecognum,
+            "SEEGChannelCount": seegnum,
+            "EEGChannelCount": eegnum,
+            "EOGChannelCount": eognum,
+            "ECGChannelCount": ecgnum,
+            "EMGChannelCount": emgnum,
+            "MiscChannelCount": 0,
+            "TriggerChannelCount": 0
+            }
+        
+        with open(os.path.join(nested_dir, modlevelfolder, nested_name  + '_ieeg.json'), 'w') as outfile:
+            json.dump(ieeg_json, outfile, indent=4)
+    else:
+        print("WARNING: channel data txt not found in pipeline_folder, skipping step to create _ieeg.json")
 
-# def process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, eps_string,pipeline_folder):
-#     """ Creates channels.tsv file for all data """
-    
-#     column_names = ["name","type","units","low_cutoff","high_cutoff","description","sampling_frequency","status","status_description"]
-#     data = []
-#     lines = []
-    
-#     channel_data_file = f"{primary_dir.split('/')[-2]}.txt"
-#     channel_data_path = os.path.join(pipeline_folder, channel_data_file)
-    
-#     """ Process edf files and generate all sidecar files """
-#     found_files = find_files_by_type(subject_folder +'/', '.mef')
-#     total_duration = 0
-    
-#     logging.getLogger('pyedflib').setLevel(logging.CRITICAL)
-#     mne.set_log_level('CRITICAL')
     
 
-#     # edf_file = pyedflib.EdfReader(found_files[0])
-#     # edffile = mne.io.read_raw_edf(found_files[0])
-        
-#     ecognum = 0
-#     ecgnum = 0
-#     emgnum = 0
-#     eegnum = 0
-#     eognum = 0
-#     seegnum = 0 
+# commented out because this function was not used in postbids.py   
+# def get_run_number_from_file(file):
+#     """ Extract run number from edf file name"""
+#     # Finds the edf number and makes the run number for associated files
+#     last_underscore_index = file.rfind('_')
+#     dot_index = file.find('.', last_underscore_index)
+    
+#     if last_underscore_index != -1 and dot_index != -1:
+#         return str(file[last_underscore_index + 1:dot_index]).zfill(5)
+    
 
-#     with open(channel_data_path, 'r') as f:
-        
-#         lines = f.readlines()
-#         for line in lines:
-#             line_data = line.split(',')
-#             channel_name = line_data[0].strip()
-#             typestr = line_data[1].strip()
-#             units = line_data[2].strip()
-#             low_cutoff = line_data[3].strip()
-#             high_cutoff = line_data[4].strip()
-#             description = line_data[5].strip()
-#             samplingfreq = line_data[6].strip()
-#             data.append([channel_name, typestr, units, low_cutoff, high_cutoff, description, samplingfreq, "good", "n/a"])
-        
-#     file_path = os.path.join(nested_dir, modlevelfolder, nested_name + '_channels.tsv')
-#     line = lines[0]
-#     startTime = int(lines[0].split(',')[8])
-#     endTime = int(lines[0].split(',')[7])
-#     total_duration = endTime - startTime
-#     with open(file_path, 'w', newline='') as csvfile:
+# commented out because this function was not used in postbids.py
+# def create_csv(channelnames, column_names, data):
+#     with open(channelnames, 'w', newline='') as csvfile:
 #         writer = csv.writer(csvfile)
 #         writer.writerow(column_names)
 #         writer.writerows(data)
-            
-#     # edf_file.close()
-#     # del edf_file
-#     # edffile.close()
-#     # del edffile
-            
-#     for file in found_files:
-        
-#         # new_bytes = eps_string.encode('utf-8')
-#         # size_of_new_bytes = len(new_bytes)
-
-#         # blankbytes = b' ' * (80 - size_of_new_bytes)
-#         # final_bytes = new_bytes + blankbytes
-
-#         # with open(file, 'rb+') as f:
-#         #     f.seek(8)
-#         #     f.write(final_bytes)
-            
-            
-#         # edf_file = pyedflib.EdfReader(file)
-#         # edffile = mne.io.read_raw_edf(file)
-#         # run_number =get_run_number_from_file(file)
-#         run_number= ""
-#         # Find duration per edf file and add to overall duration variable 
-        
-#         # edffile.info['patient_id'] = eps_string
-
-#         # edffile.save(file, overwrite=True)
-        
-#         nested_path = nested_dir + '/' + modlevelfolder +'/'
-        
-#         # Move edf files
-#         move_mef_files(file, nested_path + '/', nested_name, run_number)
-        
-#         # edf_file.close()
-#         # del edf_file
-#         # edffile.close()
-#         # del edffile
-            
-        
-#     # Generate iEEG json 
-#     ieeg_json =  {
-#         "TaskName": "rest",
-#         "Manufacturer": "n/a",
-#         "PowerLineFrequency": "n/a",
-#         "SamplingFrequency": samplingfreq,
-#         "SoftwareFilters": "n/a",
-#         "RecordingDuration": total_duration,
-#         "RecordingType": "continuous",
-#         "iEEGReference": "n/a",
-#         "ECOGChannelCount": ecognum,
-#         "SEEGChannelCount": seegnum,
-#         "EEGChannelCount": eegnum,
-#         "EOGChannelCount": eognum,
-#         "ECGChannelCount": ecgnum,
-#         "EMGChannelCount": emgnum,
-#         "MiscChannelCount": 0,
-#         "TriggerChannelCount": 0
-#         }
-    
-#    # with open(os.path.join(nested_dir, modlevelfolder, nested_name + '_' + f'{run_number}_ieeg.json'), 'w') as outfile:
-#     with open(os.path.join(nested_dir, modlevelfolder, nested_name  + '_ieeg.json'), 'w') as outfile:
-#         json.dump(ieeg_json, outfile, indent=4)
-
-
-
-
-def move_mef_files(file, nested_path, nested_name, run_number):
-    """ Move edf file to proper location within BIDs"""
-
-    file_name = os.path.basename(file)
-    # edf_filename = nested_name + f'_run-{run_number}.edf'
-    os.rename(file, os.path.join(nested_path, file_name))
-    
-        
-
-def get_run_number_from_file(file):
-    """ Extract run number from edf file name"""
-    # Finds the edf number and makes the run number for associated files
-    last_underscore_index = file.rfind('_')
-    dot_index = file.find('.', last_underscore_index)
-    
-    if last_underscore_index != -1 and dot_index != -1:
-        return str(file[last_underscore_index + 1:dot_index]).zfill(5)
     
 
-def create_csv(channelnames, column_names, data):
-
-    with open(channelnames, 'w', newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        writer.writerow(column_names)
-        writer.writerows(data)
-    
-
+# !! requires mri_data from create_participants.file (which then needs deidentified_data.csv)
+# !! requires /pipeline_folder/montages/ & pipeline_folder/annotations
+# should search for montage file in pipeline/montages/ and cp it to the derivative folder 
+# should search for annotaiton file under pipeline/annotations/ and cp to ses_postimplant/ieeg/
 def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date):
-    """ Find montages if exist and place in derivative folder """
-    for filename in os.listdir(pipeline_folder + '/montages'):
-        folder_path = os.path.join(pipeline_folder + '/montages/', filename)
-        if subjectid in filename:
-            shutil.copy(pipeline_folder + '/montages/' + filename, subject_folder + '/derivative/' + subjectid + '_montage.json')
     
+    """ Find montages if exist and place in derivative folder """
+    montages_dir = os.path.join(pipeline_folder, 'montages')
+    if os.path.isdir(montages_dir):
+        for filename in os.listdir(montages_dir):
+            folder_path = os.path.join(montages_dir, filename)
+            if subjectid in filename:
+                shutil.copy(pipeline_folder + '/montages/' + filename, subject_folder + '/derivative/' + subjectid + '_montage.json')
+    else:
+        print(f"WARNING: Montage file: {montages_dir} not found for subject {subjectid}")
+
     """ Find annotation files and place into events.tsv"""
-    for filename in os.listdir(pipeline_folder + '/annotations'):
-        folder_path = os.path.join(pipeline_folder + '/annotations/', filename)
-        if subjectid in filename:
-            if os.path.getsize(folder_path) > 1:
-               # subjannot = filename
-                annotations =  pd.read_csv(pipeline_folder + '/annotations/' + filename, sep = '\t')
-                annotations = annotations.iloc[:, :-4]
-                annotations = annotations.rename(columns={'description': 'trial_type', 'parent': 'channel'})
-                annotations.to_csv(subject_folder + '/primary/' + nesteddirectory + modlevelfolder +  '/' + nested_name + '_events.tsv', sep='\t', index=False)
-                annotations_json = {
-                    "trial_type": {
-                        "LongName": "Event",
-                        "Description": "Any annotated event by neurologist",
-                    },
-                    "channel": {
-                        "Description": "Channel(s) associated with the event",
-                        "Delimiter": ""
+    anno_dir = os.path.join(pipeline_folder, 'annotations')
+    if os.path.isdir(anno_dir):
+        for filename in os.listdir(anno_dir):
+            folder_path = os.path.join(anno_dir, filename)
+            if subjectid in filename:
+                if os.path.getsize(folder_path) > 1:
+                # subjannot = filename
+                    annotations =  pd.read_csv(anno_dir + filename, sep = '\t')
+                    annotations = annotations.iloc[:, :-4]
+                    annotations = annotations.rename(columns={'description': 'trial_type', 'parent': 'channel'})
+                    annotations.to_csv(subject_folder + '/primary/' + nesteddirectory + modlevelfolder +  '/' + nested_name + '_events.tsv', sep='\t', index=False)
+                    annotations_json = {
+                        "trial_type": {
+                            "LongName": "Event",
+                            "Description": "Any annotated event by neurologist",
+                        },
+                        "channel": {
+                            "Description": "Channel(s) associated with the event",
+                            "Delimiter": ""
+                        }
                     }
-                }
-                
-                with open(subject_folder + '/primary/' + nesteddirectory + modlevelfolder + '/' + nested_name + '_events.json', "w") as outfile:
-                    json.dump(annotations_json, outfile, indent=4)
+                    with open(subject_folder + '/primary/' + nesteddirectory + modlevelfolder + '/' + nested_name + '_events.json', "w") as outfile:
+                        json.dump(annotations_json, outfile, indent=4)
+    else:
+        print(f"WARNING: Annotation file: {anno_dir} not found for subject {subjectid}")
 
 
-# --- edited out by sz on 09/04/25 to remove EPS-related code 
+# commented out because prevent does not needs to be converts to eps 
 # def generate_eps_string(pipeline_folder):
 #     # Path to the CSV file
-#     epscsv = pipeline_folder + "/epsnumber_sub.csv" # can comment out 
+#     epscsv = pipeline_folder + "/epsnumber_sub.csv"
     
 #     # Read the CSV file and get the number from the first column
 #     with open(epscsv, newline='', encoding='utf-8-sig') as csvfile:
@@ -431,20 +365,16 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
 
 #     # Create the string with the required formatting
 #     eps_string = f"EPS{str(number).zfill(7)}"  # zfill will add leading zeros to make the string 7 digits
-    
-
 
 #     # Write the updated number back to the CSV file
 #     print (f"About to write: {number}----")
 #     print("Wrote line")
 #     with open(epscsv, mode='w', newline='') as csvfile:
-#         csvfile.writelines(str(number))      
-        
+#         csvfile.writelines(str(number))   
 #     return eps_string
 
 
-
-# --- edited out by sz on 09/04/25 to remove EPS-related code 
+# commented out because prevent does not needs to be renamed with eps 
 # def replace_in_directory(subject_folder, eps_string, subject_id):
 #     # Walk through the directory structure
 #     for root, dirs, files in os.walk(subject_folder, topdown=False):  
@@ -477,19 +407,15 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
 #             # If the name has changed, rename the item (file or directory)
 #             if new_name != item:
 #                 new_item_path = os.path.join(root, new_name)
-
 #                 # If it's a directory, rename the directory
 #                 if item in dirs:
 #                     os.rename(old_item_path, new_item_path)
-#                     #print(f"Renamed directory {item} to {new_name}")
 #                 # If it's a file, rename the file
 #                 elif item in files:
 #                     os.rename(old_item_path, new_item_path)
-#                     #print(f"Renamed file {item} to {new_name}")
 
 
-
-# # --- edited out by sz on 09/04/25 to remove EPS-related code 
+# commented out becuase prevent does not need to update EPS number for participants.tsv
 # def update_participants_tsv(primary_dir, eps_string):
 #     # Path to the participants.tsv file
 #     participants_file_path = primary_dir + '/partcipants.csv'
@@ -508,7 +434,6 @@ def other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modl
 
 #     # Delete the original CSV file
 #     os.remove(participants_file_path)
-    
 
 
 def clean_up(new_path):
@@ -529,7 +454,6 @@ def clean_up(new_path):
         src = os.path.join(new_path, f)
         dst = os.path.join(derivative_path, f)
         shutil.move(src, dst)
-
 
 
 def main():
@@ -567,35 +491,28 @@ def main():
     create_participants_json(primary_dir)
     os.makedirs(os.path.join(subject_folder + '/primary/' + nesteddirectory + modlevelfolder), exist_ok=True)
     
-    # --- edited out by sz on 09/04/25 to remove EPS-related code 
-    # eps_string = generate_eps_string(pipeline_folder)
-    
     # Process .edf files
-    process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name,pipeline_folder)
+    process_edf_files(subject_folder, primary_dir, nested_dir, modlevelfolder, nested_name, pipeline_folder)
     
     """ Deal with sidecar files (imaging, montages, annotations)"""
     other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date)
-    
-    
-    # --- edited out by sz on 09/04/25 to remove EPS-related code 
-    # replace_in_directory(subject_folder, eps_string, subject_id)
-    # update_participants_tsv(primary_dir, eps_string)
-    
+            
+    parent_dir = os.path.dirname(subject_folder) 
+    #old_directory_name = os.path.basename(subject_folder)  
+    new_directory_name = subjectid  
 
-    # --- edited out by sz on 09/04/25 to remove EPS-related code 
-    #parent_dir = os.path.dirname(subject_folder) 
-    #old_directory_name = os.path.basename(subject_folder)  # originally commented out 
-    #new_directory_name = eps_string  
     # Create the full new path
-    #new_path = os.path.join(parent_dir, new_directory_name)
-    #os.rename(subject_folder, new_path)
-    clean_up(subject_folder)
+    new_path = os.path.join(parent_dir, new_directory_name)
+    os.rename(subject_folder, new_path)
+    clean_up(new_path)
     
     #print(new_path)
-    sys.stdout.write(subject_folder) 
-    
+    sys.stdout.write(new_path) 
+
+
+# running postbids.py
 if __name__ == '__main__':
+    print("----- Starting postbids.py -----")
     main()
-    
-    
-        
+    print("----- Finished postbids.py -----")
+

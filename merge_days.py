@@ -9,7 +9,12 @@ def numeric_key(folder: Path):
     match = re.search(r"EPS(\d+)", folder.name)
     return int(match.group(1)) if match else float('inf')
 
-# Get input directory from CLI
+# DEBUG: print sys.argv[0] and [1]
+print(f"DEBUG: sys.argv[0] = {sys.argv[0]}")
+print(f"DEBUG: sys.argv[1] = {sys.argv[1]}")
+# DEBUG END
+
+# Get input directory from CLI:
 if len(sys.argv) != 2:
     print("❌ Usage: python merge_days.py <EPS_PARENT_FOLDER>")
     sys.exit(1)

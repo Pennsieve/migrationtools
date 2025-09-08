@@ -1,7 +1,12 @@
 .DS_Store
 .env
+
+deidentified_data.csv
 migration_paths.csv
 migration_log.txt
 migration_results.csv
+
 epsnumber.csv
+
+PRV*.txt
 

@@ -479,7 +479,6 @@ def main():
         modlevelfolder = 'ieeg/'
     elif args.type == "scalp":
         modlevelfolder = 'eeg/'
-        
 
     nesteddirectory = subjectlevelfolder + '/' + sessionlevelfolder + '/'
     
@@ -498,10 +497,7 @@ def main():
     other_data(pipeline_folder, subject_folder, subjectid, nesteddirectory, modlevelfolder, nested_name, mri_date)
             
     parent_dir = os.path.dirname(subject_folder) 
-    #old_directory_name = os.path.basename(subject_folder)  
     new_directory_name = subjectid  
-
-    # Create the full new path
     new_path = os.path.join(parent_dir, new_directory_name)
     os.rename(subject_folder, new_path)
     clean_up(new_path)

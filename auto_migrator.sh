@@ -66,8 +66,8 @@ process_row() {
         EPS_DIR="$HOME/data/$EPS_AUTO_NUMBER"
     else
         echo "WARNING: EPS_TRACKER_FILE not found or inaccessible" | tee -a "$LOG_FILE"
-        EPS_AUTO_NUMBER='N/A'
-        EPS_DIR='N/A'
+        EPS_AUTO_NUMBER=$NAME_OF_FOLDER
+        EPS_DIR="$HOME/data/$EPS_AUTO_NUMBER"
     fi
     # DEBUG END
 
@@ -91,44 +91,53 @@ process_row() {
     echo "$(date '+%Y-%m-%d %H:%M:%S') Conversion successful for '$NAME_OF_FOLDER'. Sleeping for 5 seconds" | tee -a "$LOG_FILE"
     sleep 5
 
+    # Run merge_days.py to merge patients' data taken on different days
+    echo "$(date '+%Y-%m-%d %H:%M:%S') Running merge_days.py" | tee -a "$LOG_FILE"
+    /usr/bin/python3 "$TOOLS_DIR/merge_days.py" "$HOME/data"
+    if [ $? -ne 0 ]; then
+        echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ merge_days.py failed for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"
+        echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,FAILED_MERGE_DAYS" >> "$MIGRATION_RESULTS_FILE"
+        return
+    fi
 
-#    ---- code to upload to pennsieve 
-#    echo "$(date '+%Y-%m-%d %H:%M:%S') Creating Pennsieve dataset: $EPS_AUTO_NUMBER" | tee -a "$LOG_FILE"
-#     CREATE_OUTPUT=$(pennsieve dataset create "$EPS_AUTO_NUMBER" "Auto-migrated dataset from ieeg.org" '["epilepsy", "epilepsy.science", "ieeg", "auto-migration"]')
-#     echo "$CREATE_OUTPUT"
 
-#    DATASET_NODE_ID=$(echo "$CREATE_OUTPUT" | grep 'NODE ID' | awk -F '|' '{gsub(/ /,"",$3); print $3}')
+   # NOTE: code to upload to pennsieve 
+   echo "$(date '+%Y-%m-%d %H:%M:%S') Creating Pennsieve dataset: $EPS_AUTO_NUMBER" | tee -a "$LOG_FILE"
+    CREATE_OUTPUT=$(pennsieve dataset create "$EPS_AUTO_NUMBER" "Auto-migrated dataset for PREVeNT from ieeg.org" '["epilepsy", "epilepsy.science", "ieeg", "auto-migration"]')
+    echo "$CREATE_OUTPUT"
 
-#    if [ -z "$DATASET_NODE_ID" ]; then
-#        echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Failed to extract dataset NODE ID for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"
-#        echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,FAILED_NODE_ID" >> "$MIGRATION_RESULTS_FILE"
-#        return
-#    fi
+   DATASET_NODE_ID=$(echo "$CREATE_OUTPUT" | grep 'NODE ID' | awk -F '|' '{gsub(/ /,"",$3); print $3}')
 
-#    echo "$(date '+%Y-%m-%d %H:%M:%S') Created dataset with NODE ID: $DATASET_NODE_ID. Sleep for 2.5 seconds" | tee -a "$LOG_FILE"
-#    sleep 2.5
+   if [ -z "$DATASET_NODE_ID" ]; then
+       echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Failed to extract dataset NODE ID for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"
+       echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,FAILED_NODE_ID" >> "$MIGRATION_RESULTS_FILE"
+       return
+   fi
 
-#    pennsieve dataset use "$DATASET_NODE_ID"
+   echo "$(date '+%Y-%m-%d %H:%M:%S') Created dataset with NODE ID: $DATASET_NODE_ID. Sleep for 2.5 seconds" | tee -a "$LOG_FILE"
+   sleep 2.5
 
-#    MANIFEST_OUTPUT=$(pennsieve manifest create "$EPS_DIR")
-#    MANIFEST_ID=$(echo "$MANIFEST_OUTPUT" | grep -oE 'Manifest ID: [^ ]+' | cut -d' ' -f3)
-#    if [ -z "$MANIFEST_ID" ]; then
-#        echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Manifest creation failed for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"
-#        echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,MANIFEST_CREATION_FAILED" >> "$MIGRATION_RESULTS_FILE"
-#        return
-#    fi
+   pennsieve dataset use "$DATASET_NODE_ID"
 
-#    MAX_RETRIES=3
-#    for attempt in $(seq 1 $MAX_RETRIES); do
-#        echo "$(date '+%Y-%m-%d %H:%M:%S') Attempt $attempt: Uploading manifest $MANIFEST_ID" | tee -a "$LOG_FILE"
-#        if timeout 1800 pennsieve upload manifest "$MANIFEST_ID" </dev/null >>"$LOG_FILE" 2>&1; then
-#            echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,$EPS_AUTO_NUMBER" >> "$MIGRATION_RESULTS_FILE"
-#            echo "$(date '+%Y-%m-%d %H:%M:%S') 🏁 CONVERTED '$NAME_OF_FOLDER' TO '$EPS_AUTO_NUMBER'" | tee -a "$LOG_FILE"
-#            return
-#        fi
-#        echo "$(date '+%Y-%m-%d %H:%M:%S') Upload failed on attempt $attempt" | tee -a "$LOG_FILE"
-#        sleep $((attempt * 30))
-#    done
+   MANIFEST_OUTPUT=$(pennsieve manifest create "$EPS_DIR")
+   MANIFEST_ID=$(echo "$MANIFEST_OUTPUT" | grep -oE 'Manifest ID: [^ ]+' | cut -d' ' -f3)
+   if [ -z "$MANIFEST_ID" ]; then
+       echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Manifest creation failed for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"
+       echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,MANIFEST_CREATION_FAILED" >> "$MIGRATION_RESULTS_FILE"
+       return
+   fi
+
+   MAX_RETRIES=3
+   for attempt in $(seq 1 $MAX_RETRIES); do
+       echo "$(date '+%Y-%m-%d %H:%M:%S') Attempt $attempt: Uploading manifest $MANIFEST_ID" | tee -a "$LOG_FILE"
+       if timeout 1800 pennsieve upload manifest "$MANIFEST_ID" </dev/null >>"$LOG_FILE" 2>&1; then
+           echo "$NAME_OF_FOLDER,$MIGRATION_SHEET_PATH,$EPS_AUTO_NUMBER" >> "$MIGRATION_RESULTS_FILE"
+           echo "$(date '+%Y-%m-%d %H:%M:%S') 🏁 CONVERTED '$NAME_OF_FOLDER' TO '$EPS_AUTO_NUMBER'" | tee -a "$LOG_FILE"
+           return
+       fi
+       echo "$(date '+%Y-%m-%d %H:%M:%S') Upload failed on attempt $attempt" | tee -a "$LOG_FILE"
+       sleep $((attempt * 10))
+   done
     return
 
     echo "$(date '+%Y-%m-%d %H:%M:%S') ❌ Final upload failure for '$NAME_OF_FOLDER'" | tee -a "$LOG_FILE"

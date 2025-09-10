@@ -330,7 +330,7 @@ main() {
         log_message "Progress: $successful successful, $failed failed, $((total_patients - current)) remaining"
     done < "$groups_file"
     
-    #rm -f "$groups_file"  # clean up
+    rm -f "$groups_file"  # clean up
     
     # summary
     log_message "🏁 Migration complete!"

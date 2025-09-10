@@ -158,4 +158,21 @@ for prv, suffix in zip(prv_folders, ordered_suffixes):
 
         shutil.move(str(item), str(dest))
 
+# After all moves are done, rename directories to remove suffixes
+# First get the base name (only the first three parts before the third hyphen)
+parts = main_id.split("-", 3)  # split max 3 times, similar to numeric_key function
+base_name = "-".join(parts[:3])  # Take only the first three parts
+
+# Rename the sub directory first (deeper in the tree)
+main_sub_dir = main_folder / "primary" / f"sub-{main_id}"
+if main_sub_dir.exists():
+    new_sub_dir = main_folder / "primary" / f"sub-{base_name}"
+    print(f"\n✅ Renaming main sub directory:\n    {main_sub_dir.name} → {new_sub_dir.name}")
+    shutil.move(str(main_sub_dir), str(new_sub_dir))
+
+# Then rename the main folder itself
+new_main_folder = main_folder.parent / base_name
+print(f"✅ Renaming main folder:\n    {main_folder.name} → {new_main_folder.name}")
+shutil.move(str(main_folder), str(new_main_folder))
+
 print("----- Finishing merge_days.py -----")

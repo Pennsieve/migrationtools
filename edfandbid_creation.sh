@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 ## By Julia Dengler 
 
 ## INPUT FOLDER IS THE FOLDER WITH THE MEF FILES, REQUIRED: FOLDER NAME IS SUBJECT ID (ex. HUP199_phaseII)

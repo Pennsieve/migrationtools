@@ -1,2 +1,7 @@
 .DS_Store
 .env
+input/
+output/
+ieeg_sidescar_file_output/
+__pycache__/
+*.pyc

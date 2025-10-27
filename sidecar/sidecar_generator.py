@@ -2,6 +2,7 @@ from DatsetDescriptionSidecar import DatasetDescriptionSidecar
 from SessionsSidecar import SessionSidecar
 from ParticipantsSidecar import ParticipantsSidecar
 from IEEGSidecar import IeegSidecar
+from ChannelsSidecar import ChannelsSidecar
 
 def main():
     dd_sidecar = DatasetDescriptionSidecar({
@@ -125,7 +126,6 @@ def main():
     else:
         print("Skipping save due to validation errors.")
 
-def main():
     ieeg_data = {
         "TaskName": "clinical_monitoring",
         "PowerLineFrequency": 60,
@@ -157,6 +157,64 @@ def main():
     if is_valid:
         sidecar.save( output_dir="output/bids", flat=True)
         print("Saved ieeg.json successfully.")
+
+    channels_data = [
+        {
+            "name": "EKG1",
+            "type": "ECG",
+            "units": "uV",
+            "low_cutoff": "n/a",
+            "high_cutoff": "n/a",
+            "reference": "unknown",
+            "ground": "unknown",
+            "group": "n/a",
+            "sampling_frequency": "n/a",
+            "notch": "n/a",
+        },
+        {
+            "name": "LA01",
+            "type": "SEEG",
+            "units": "uV",
+            "low_cutoff": "n/a",
+            "high_cutoff": 0.01,
+            "reference": "LE10",
+            "ground": "RF6",
+            "group": "LA",
+            "sampling_frequency": 256,
+            "notch": "n/a",
+        },
+        {
+            "name": "LA02",
+            "type": "SEEG",
+            "units": "uV",
+            "low_cutoff": "n/a",
+            "high_cutoff": 0.01,
+            "reference": "LE10",
+            "ground": "RF6",
+            "group": "LA",
+            "sampling_frequency": 256,
+            "notch": "n/a",
+        },
+    ]
+
+    sidecar = ChannelsSidecar({})
+    ok, report = sidecar.validate(channels_data)
+
+    if ok:
+        print("channels.tsv is valid ✅")
+    else:
+        print("channels.tsv validation failed ❌")
+        for e in report["errors"]:
+            print("  -", e)
+
+    if report.get("warnings"):
+        print("Warnings:")
+        for w in report["warnings"]:
+            print("  -", w)
+
+    if ok:
+        sidecar.save(data=channels_data, output_dir="output/bids/", flat=True)
+        print("channels.tsv successfully written to output/bids/")
 
 
 main()

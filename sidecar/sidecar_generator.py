@@ -1,6 +1,7 @@
 from DatsetDescriptionSidecar import DatasetDescriptionSidecar
 from SessionsSidecar import SessionSidecar
 from ParticipantsSidecar import ParticipantsSidecar
+from IEEGSidecar import IeegSidecar
 
 def main():
     dd_sidecar = DatasetDescriptionSidecar({
@@ -123,6 +124,39 @@ def main():
         print("sessions.tsv successfully written to output/bids/")
     else:
         print("Skipping save due to validation errors.")
+
+def main():
+    ieeg_data = {
+        "TaskName": "clinical_monitoring",
+        "PowerLineFrequency": 60,
+        "SamplingFrequency": 256,
+        "SoftwareFilters": "n/a",
+        "iEEGReference": "LE10",
+        "iEEGGround": "RF6",
+        "Manufacturer": "Natus",
+        "ManufacturersModelName": "Quantum",
+        "InstitutionName": "Penn Medicine",
+        "RecordingDuration": 3600,
+        "RecordingType": "continuous",
+        "ECOGChannelCount": 32,
+        "SEEGChannelCount": 64,
+        "EEGChannelCount": 0,
+        "ElectrodeManufacturer": "AD-TECH",
+        "ElectrodeManufacturersModelName": "SDE",
+    }
+
+    sidecar = IeegSidecar(ieeg_data)
+    is_valid = sidecar.validate()
+
+    if is_valid:
+        print("iEEG Sidecar is valid ✅")
+    else:
+        print("IeegSidecar is invalid.")
+
+    # Save only if validation passed
+    if is_valid:
+        sidecar.save( output_dir="output/bids", flat=True)
+        print("Saved ieeg.json successfully.")
 
 
 main()

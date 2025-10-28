@@ -1,9 +1,9 @@
 import csv
 from typing import Dict, Any, List, Tuple
-from Sidecar import Sidecar
+from Sidecar import TSVSidecar
 
 
-class ElectrodesSidecar(Sidecar):
+class ElectrodesSidecar(TSVSidecar):
     """
     Represents the electrodes.tsv BIDS sidecar file.
     Stateless — caller provides data (list of dicts).
@@ -70,37 +70,3 @@ class ElectrodesSidecar(Sidecar):
 
         ok = not errors
         return ok, {"errors": errors, "warnings": warnings, "columns": sorted(all_fields)}
-
-    def write_data(self, file_path: str, data: List[Dict[str, Any]]):
-        """
-        Writes the electrodes.tsv file. Each dict represents one electrode row.
-        """
-        if not data:
-            raise ValueError("No data provided to write.")
-
-        fieldnames = [
-            "name",
-            "x",
-            "y",
-            "z",
-            "size",
-            "material",
-            "manufacturer",
-            "group",
-            "hemisphere",
-            "type",
-            "impedance",
-            "dimension",
-            "roi",
-        ]
-        # keep only those present in data
-        fieldnames = [f for f in fieldnames if f in data[0]]
-
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f, fieldnames=fieldnames, delimiter="\t", extrasaction="ignore"
-            )
-            writer.writeheader()
-            writer.writerows(data)
-
-        self.log.debug(f"Wrote electrodes.tsv to {file_path}")

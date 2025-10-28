@@ -27,11 +27,8 @@ def main():
         }],
         "Description": "DESCRIPTION",
     })
-    if dd_sidecar.validate():
-        print("DatasetDescriptionSidecar is valid.")
-        dd_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
-    else:
-        print("DatasetDescriptionSidecar is invalid.")
+
+    dd_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
 
     participants_sidecar = ParticipantsSidecar({
         "participant_id": {
@@ -80,11 +77,8 @@ def main():
             "Units": "HED tag string (optional)"
         }
         })
-    if participants_sidecar.validate():
-        print("DatasetDescriptionSidecar is valid.")
-        participants_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
-    else:
-        print("DatasetDescriptionSidecar is invalid.")
+
+    participants_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
 
     sessions_data = [
         {
@@ -104,31 +98,10 @@ def main():
             "sex": "M",
         },
     ]
-    session_sidecar = SessionSidecar({})
+    session_sidecar = SessionSidecar()
 
-    # Run validation
-    ok, report = session_sidecar.validate(sessions_data)
+    session_sidecar.save(data=sessions_data, output_dir="output/bids/", flat=True)
 
-    # Print validation feedback
-    if ok:
-        print("SessionSidecar is valid.")
-    else:
-        print("SessionSidecar validation failed.")
-        if report.get("errors"):
-            print("Errors:")
-            for err in report["errors"]:
-                print("  -", err)
-    if report.get("warnings"):
-        print("Warnings:")
-        for warn in report["warnings"]:
-            print("  -", warn)
-
-    # Save file if validation passes
-    if ok:
-        session_sidecar.save(data=sessions_data, output_dir="output/bids/", flat=True)
-        print("sessions.tsv successfully written to output/bids/")
-    else:
-        print("Skipping save due to validation errors.")
 
     ieeg_data = {
         "TaskName": "clinical_monitoring",
@@ -150,17 +123,7 @@ def main():
     }
 
     sidecar = IeegSidecar(ieeg_data)
-    is_valid = sidecar.validate()
-
-    if is_valid:
-        print("iEEG Sidecar is valid ✅")
-    else:
-        print("IeegSidecar is invalid.")
-
-    # Save only if validation passed
-    if is_valid:
-        sidecar.save( output_dir="output/bids", flat=True)
-        print("Saved ieeg.json successfully.")
+    sidecar.save( output_dir="output/bids", flat=True)
 
     channels_data = [
         {
@@ -201,24 +164,9 @@ def main():
         },
     ]
 
-    sidecar = ChannelsSidecar({})
-    ok, report = sidecar.validate(channels_data)
+    sidecar = ChannelsSidecar()
+    sidecar.save(data=channels_data, output_dir="output/bids/", flat=True)
 
-    if ok:
-        print("channels.tsv is valid ✅")
-    else:
-        print("channels.tsv validation failed ❌")
-        for e in report["errors"]:
-            print("  -", e)
-
-    if report.get("warnings"):
-        print("Warnings:")
-        for w in report["warnings"]:
-            print("  -", w)
-
-    if ok:
-        sidecar.save(data=channels_data, output_dir="output/bids/", flat=True)
-        print("channels.tsv successfully written to output/bids/")
 
     coord_fields = {
         "iEEGCoordinateSystem": "fsnative",
@@ -232,11 +180,8 @@ def main():
     }
 
     sidecar = CoordSystemSidecar(coord_fields)
-    if sidecar.validate():
-        print("CoordSystemSidecar is valid ✅")
-        sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
-    else:
-        print("CoordSystemSidecar is invalid ❌")
+    sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
+
 
     electrodes_data = [
         {
@@ -271,21 +216,8 @@ def main():
         },
     ]
 
-    sidecar = ElectrodesSidecar({})
-    ok, report = sidecar.validate(electrodes_data)
-
-    if ok:
-        print("✅ ElectrodesSidecar is valid.")
-        sidecar.save(data=electrodes_data, output_dir="output/bids/", flat=True)
-    else:
-        print("❌ ElectrodesSidecar validation failed.")
-        for err in report["errors"]:
-            print("  -", err)
-
-    if report.get("warnings"):
-        print("⚠️ Warnings:")
-        for warn in report["warnings"]:
-            print("  -", warn)
+    sidecar = ElectrodesSidecar()
+    sidecar.save(data=electrodes_data, output_dir="output/bids/", flat=True)
 
     eeg_fields = {
         "TaskName": "RestingState",
@@ -303,12 +235,7 @@ def main():
     }
 
     eeg_sidecar = EEGSidecar(eeg_fields)
-    if eeg_sidecar.validate():
-        print("✅ EEGSidecar is valid.")
-        eeg_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
-    else:
-        print("❌ EEGSidecar validation failed.")
-
+    eeg_sidecar.save(output_dir="output/bids", flat=True, json_indent=4)
 
     events_data = [
         {
@@ -336,20 +263,7 @@ def main():
         },
     ]
 
-    sidecar = EventsSidecar({})
-    ok, report = sidecar.validate(events_data)
-
-    if ok:
-        print("✅ EventsSidecar is valid.")
-        sidecar.save(data=events_data, output_dir="output/bids", flat=True)
-    else:
-        print("❌ Validation failed:")
-        for err in report["errors"]:
-            print("  -", err)
-
-    if report.get("warnings"):
-        print("⚠️ Warnings:")
-        for warn in report["warnings"]:
-            print("  -", warn)
+    sidecar = EventsSidecar()
+    sidecar.save(data=events_data, output_dir="output/bids", flat=True)
 
 main()

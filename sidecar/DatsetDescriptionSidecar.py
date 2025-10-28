@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class DatasetDescriptionSidecar(Sidecar):
+class DatasetDescriptionSidecar(JSONSidecar):
     """
     Represents the dataset_description.json BIDS sidecar.
 

@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class CoordSystemSidecar(Sidecar):
+class CoordSystemSidecar(JSONSidecar):
     """
     Represents the iEEG coordinate system sidecar (e.g., space-native_coordsystem.json).
 

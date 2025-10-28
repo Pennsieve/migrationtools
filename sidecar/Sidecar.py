@@ -1,5 +1,6 @@
 import os
 import sys
+import csv
 import json
 import logging
 import threading
@@ -28,20 +29,21 @@ class Sidecar(ABC):
 
     default_filename: str = "sidecar.json"
     default_bids_path: str = "bids_root/"
-    file_format: str = "json"
+    default_input_dir: str = "input/"
+    default_output_dir: str = "output/"
+    file_format: str = ""
 
     _logger: Optional[logging.Logger] = None
     _log_dir: str = "output/logs"
 
-    json_indent: int = 2
+    json_indent: int = 4
 
     REQUIRED_FIELDS = {}
     RECOMMENDED_FIELDS = {}
     OPTIONAL_FIELDS = {}
+    SCHEMA = {}
 
-    # ----------------------------------------------------------------------
-    # Logging
-    # ----------------------------------------------------------------------
+
     @classmethod
     def configure_logger(cls, log_dir: str):
         """
@@ -56,6 +58,7 @@ class Sidecar(ABC):
             cls._logger = setup_logger("sidecar_data_generator", log_dir=cls._log_dir)
             cls._logger.info(f"Logger reconfigured with new log_dir: {log_dir}")
 
+
     @classmethod
     def get_logger(cls):
         with _logger_lock:
@@ -64,32 +67,49 @@ class Sidecar(ABC):
                 cls._logger.debug(f"Logger initialized for Sidecar (log_dir={cls._log_dir})")
             return cls._logger
 
-    # ----------------------------------------------------------------------
-    # Initialization
-    # ----------------------------------------------------------------------
-    def __init__(self, fields: Dict[str, Any], **kwargs):
+
+    def __init__(
+            self,
+            fields: Dict[str, Any],
+            required_fields=None,
+            recommended_fields=None,
+            optional_fields=None,
+            schema=None,
+            **kwargs
+            ):
         self.log = self.get_logger()
 
         if not isinstance(fields, dict):
             raise TypeError("fields must be a dictionary")
 
-        path_defaults = {"bids_path": self.default_bids_path}
+        # Get user supplied paths
+        path_defaults = {
+            "bids_path": self.default_bids_path,
+            "input_dir": self.default_input_dir,
+            "output_dir": self.default_output_dir
+            }
+        
         merged_paths = {**path_defaults, **kwargs}
 
+        # separate path information out
         self.paths = {k: v for k, v in merged_paths.items() if k in self.excluded_fields}
+
+        # everything else is held in data
         self.data = {k: v for k, v in fields.items() if k not in self.excluded_fields}
 
-        for key, value in self.data.items():
-            if not hasattr(self, key):
-                setattr(self, key, value)
+        for k, v in kwargs.items():
+            if hasattr(self, k):
+                setattr(self, k, v)
 
-        self.json_indent = kwargs.pop("json_indent", self.json_indent)
+        self.required_fields = required_fields or self.REQUIRED_FIELDS
+        self.recommended_fields = recommended_fields or self.RECOMMENDED_FIELDS
+        self.optional_fields = optional_fields or self.OPTIONAL_FIELDS
+        self.schema = schema or self.SCHEMA
+        
 
         self.log.debug(f"Initialized {self.__class__.__name__} with {len(self.data)} fields")
 
-    # ----------------------------------------------------------------------
-    # Validation (abstract)
-    # ----------------------------------------------------------------------
+
     @abstractmethod
     def validate(self, strict: bool = True) -> Tuple[bool, Dict[str, Any]]:
         """
@@ -102,6 +122,7 @@ class Sidecar(ABC):
             dict: Structured result containing messages, errors, etc.
         """
         pass
+
 
     def run_validation(self, strict: bool = True) -> bool:
         """
@@ -118,6 +139,7 @@ class Sidecar(ABC):
         else:
             self.log.info(f"{self.__class__.__name__} validation passed.")
         return ok
+
 
     def save(
         self,
@@ -167,3 +189,48 @@ class Sidecar(ABC):
             self.log.info(summary)
         else:
             print(summary)
+
+
+class JSONSidecar(Sidecar):
+    """Base class for JSON sidecar files."""
+    def __init__(self, fields={}, required_fields=None, recommended_fields=None, optional_fields=None, schema=None, **kwargs):
+        super().__init__(fields, required_fields, recommended_fields, optional_fields, schema, **kwargs)
+
+    required_fields, recommended_fields, optional_fields,defaults = {}, {},{},{}
+
+    file_format = "json"
+
+    def write_data(self, file_path: str, data: Dict[str, Any]):
+        """Default JSON writer."""
+        with open(file_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=self.json_indent, default=str)
+
+
+class TSVSidecar(Sidecar):
+    """Base class for CSV/TSV sidecar files."""
+
+    file_format = "tsv"
+
+    def __init__(self, fields={}, required_fields=None, recommended_fields=None, optional_fields=None, schema=None, **kwargs):
+        super().__init__(fields, required_fields, recommended_fields, optional_fields, schema, **kwargs)
+
+    @property
+    def delimiter(self):
+        return "\t"
+
+    def write_data(self, file_path: str, data: List[Dict[str, Any]]):
+        """
+        Writes a TSV file. Each dict represents a row.
+        """
+        if not data:
+            raise ValueError("No data provided to write.")
+
+        fieldnames = list(data[0].keys())
+
+        with open(file_path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+            writer.writeheader()
+            writer.writerows(data)
+
+        self.log.debug(f"Wrote TSV data to {file_path}")
+

@@ -1,9 +1,8 @@
-import csv
 from typing import Dict, Any, List, Tuple
-from Sidecar import Sidecar
+from Sidecar import TSVSidecar
 
 
-class SessionSidecar(Sidecar):
+class SessionSidecar(TSVSidecar):
     """
     Represents the sessions.tsv sidecar file.
     Stateless — caller provides data (list of dicts).
@@ -59,20 +58,3 @@ class SessionSidecar(Sidecar):
 
         ok = not errors
         return ok, {"errors": errors, "warnings": warnings, "columns": expected_cols}
-
-    def write_data(self, file_path: str, data: List[Dict[str, Any]]):
-        """
-        Writes a TSV file. Each dict represents a row.
-        """
-        if not data:
-            raise ValueError("No data provided to write.")
-
-        fieldnames = list(data[0].keys())
-
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
-            writer.writeheader()
-            writer.writerows(data)
-
-        self.log.debug(f"Wrote TSV data to {file_path}")
-        

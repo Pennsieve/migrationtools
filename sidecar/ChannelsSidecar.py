@@ -1,9 +1,9 @@
 import csv
 from typing import Dict, Any, List, Tuple
-from Sidecar import Sidecar
+from Sidecar import TSVSidecar
 
 
-class ChannelsSidecar(Sidecar):
+class ChannelsSidecar(TSVSidecar):
     """
     Represents the channels.tsv BIDS sidecar file.
 
@@ -79,33 +79,3 @@ class ChannelsSidecar(Sidecar):
 
         ok = not errors
         return ok, {"errors": errors, "warnings": warnings, "columns": sorted(all_fields)}
-
-    def write_data(self, file_path: str, data: List[Dict[str, Any]]):
-        """
-        Writes a TSV file where each dict corresponds to one channel.
-        """
-        if not data:
-            raise ValueError("No data provided to write.")
-
-        # Ensure consistent field order
-        fieldnames = [
-            "name",
-            "type",
-            "units",
-            "sampling_frequency",
-            "low_cutoff",
-            "high_cutoff",
-            "notch",
-            "reference",
-            "group",
-            "description",
-        ]
-        # keep only those actually in the data
-        fieldnames = [f for f in fieldnames if f in data[0]]
-
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t", extrasaction="ignore")
-            writer.writeheader()
-            writer.writerows(data)
-
-        self.log.debug(f"Wrote channels.tsv to {file_path}")

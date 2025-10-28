@@ -1,9 +1,9 @@
 import csv
 from typing import Dict, Any, List, Tuple
-from Sidecar import Sidecar
+from Sidecar import TSVSidecar
 
 
-class EventsSidecar(Sidecar):
+class EventsSidecar(TSVSidecar):
     """
     Represents the events.tsv BIDS sidecar file.
     Stateless — caller provides data (list of dicts).
@@ -77,38 +77,3 @@ class EventsSidecar(Sidecar):
 
         ok = not errors
         return ok, {"errors": errors, "warnings": warnings, "columns": sorted(all_fields)}
-
-    def write_data(self, file_path: str, data: List[Dict[str, Any]]):
-        """
-        Writes the events.tsv file.
-        Each dict represents a row.
-        """
-        if not data:
-            raise ValueError("No data provided to write.")
-
-        fieldnames = [
-            "onset",
-            "duration",
-            "trial_type",
-            "response_time",
-            "HED",
-            "stim_file",
-            "channel",
-            "Description",
-            "Parent",
-            "Annotated",
-            "Annotator",
-            "Type",
-            "Layer",
-        ]
-        # Keep only fields present in the data
-        fieldnames = [f for f in fieldnames if f in data[0]]
-
-        with open(file_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f, fieldnames=fieldnames, delimiter="\t", extrasaction="ignore"
-            )
-            writer.writeheader()
-            writer.writerows(data)
-
-        self.log.debug(f"Wrote events.tsv to {file_path}")

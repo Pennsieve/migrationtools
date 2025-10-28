@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class ParticipantsSidecar(Sidecar):
+class ParticipantsSidecar(JSONSidecar):
     """
     Represents the participants.json BIDS sidecar.
 

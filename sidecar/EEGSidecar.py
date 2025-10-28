@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class EEGSidecar(Sidecar):
+class EEGSidecar(JSONSidecar):
     """
     Represents the eeg.json BIDS sidecar file.
 

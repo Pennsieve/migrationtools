@@ -62,20 +62,20 @@ class IeegSidecar(Sidecar):
     }
 
     DEFAULTS = {
-        "TaskName": "clinical_monitoring",
+        "TaskName": "clinical",
         "PowerLineFrequency": 60,
-        "SamplingFrequency": 256,
+        "SamplingFrequency": "n/a",
         "SoftwareFilters": "n/a",
-        "iEEGReference": "LE10",
-        "iEEGGround": "RF6",
-        "RecordingType": "continuous",
+        "iEEGReference": "unknown",
+        "iEEGGround": "unknown",
+        "RecordingType": "discontinuous",
         "Manufacturer": "Natus",
         "ManufacturersModelName": "Quantum",
         "InstitutionName": "Penn Medicine",
-        "InstitutionAddress": "3400 Spruce Street, Philadelphia, PA",
-        "InstitutionalDepartmentName": "Department of Neurology",
+        "InstitutionAddress": "",
+        "InstitutionalDepartmentName": "",
         "ElectrodeManufacturer": "AD-TECH",
-        "ElectrodeManufacturersModelName": "SDE",
+        "ElectrodeManufacturersModelName": "",
     }
 
     SCHEMA = {

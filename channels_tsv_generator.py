@@ -1,13 +1,13 @@
 import csv
 import os
 import re
-import json
+import sys
 import string
 import requests
 from urllib.parse import quote
 
 
-API_KEY = ""
+API_KEY = os.getenv("API_KEY")
 BASE_URL = "https://api.pennsieve.io"
 MASTER_CSV_PATH = "input/mastermigration_metadata.csv"
 OUTPUT_DIR = "output"
@@ -48,7 +48,7 @@ def get_dataset_packages(dataset_id):
     encoded_id = quote(dataset_id, safe="")
     url = (
         f"{BASE_URL}/datasets/{encoded_id}/packages?"
-        f"pageSize=100&includeSourceFiles=false&api_key={API_KEY}"
+        f"pageSize=1000&includeSourceFiles=false&api_key={API_KEY}"
     )
     headers = {"accept": "*/*"}
     response = requests.get(url, headers=headers)
@@ -76,16 +76,25 @@ def sanitize_group_name(name: str) -> str:
     return re.sub(r"[^\w]", "", name)
 
 
-def get_sampling_frequency_from_json(filename: str) -> str:
-    try:
-        with open(f"{IEEG_JSON_PATH}/ieeg.json","r") as f:
-            data = json.load(f)
-            return data["SamplingFrequency"]
-    except FileNotFoundError as file_not_found_err:
-        print(f"Error opening file: {file_not_found_err}")
-    except json.JSONDecodeError as json_error:
-        print(f"Json Decode error: {json_error}")
+def get_sampling_frequency_from_json(node_id) -> str:
+    url = f"https://api.pennsieve.io/packages/download-manifest?api_key={API_KEY}"
 
+    payload = { "nodeIds": [node_id] }
+    headers = {
+        "accept": "*/*",
+        "content-type": "application/json"
+    }
+
+    response = requests.post(url, json=payload, headers=headers)
+    response_json = response.json()
+    data = response_json["data"]
+    for payload in data:
+        download_url = payload["url"]
+
+    response = requests.get(download_url)
+    response.raise_for_status()
+    ieeg_json =  response.json()
+    return ieeg_json.get("SamplingFrequency","n/a")
 
 def make_output_name(dataset_name: str) -> str:
     """
@@ -94,7 +103,7 @@ def make_output_name(dataset_name: str) -> str:
     """
     match = re.search(r"(\d+)", dataset_name)
     num = match.group(1) if match else "00000"
-    return f"PennEPI-{int(num):05d}"
+    return f"PennEPI{int(num):05d}"
 
 def clean_basename(pkg_name: str) -> str:
     name = pkg_name.lower().removesuffix(".mef")
@@ -123,12 +132,31 @@ def main():
 
         pkg_data = get_dataset_packages(ds_id)
         packages = pkg_data.get("packages", [])
+        
+        sampling_freq = "n/a"
+
+        # Get sampling frequency
+        for pkg in packages:
+            pkg_content = pkg.get("content", {})
+            if pkg_content.get("state") == "DELETED":
+                continue
+            pkg_name = pkg_content.get("name", "")
+            ieeg_json = pkg_name.lower().strip().endswith("implant_ieeg.json")
+            
+            if not ieeg_json:
+                continue
+
+            node_id = pkg.get("content").get("nodeId")
+            sampling_freq = get_sampling_frequency_from_json(node_id)
+
 
         rows = []
         for pkg in packages:
             pkg_content = pkg.get("content", {})
             pkg_name = pkg_content.get("name", "")
-            if not pkg_name.lower().endswith(".mef"):
+            mef = pkg_name.lower().endswith(".mef")
+            
+            if not mef:
                 continue
 
             base_name = clean_basename(pkg_name)
@@ -150,7 +178,6 @@ def main():
                 reference, ground = master_map.get(name, ("unknown", "unknown"))
 
             group = sanitize_group_name(base_name)[:2]
-            sampling_freq = get_sampling_frequency_from_json(pkg_name)
 
             rows.append({
                 "name": base_name,

@@ -8,11 +8,135 @@ import os
 import sys
 from pathlib import Path
 from collections import defaultdict
-from sidecar.eegJSON import eegJSON
-from sidecar.sessionsTSV import SessionsTSV
-from sidecar.channelsTSV import ChannelsTSV
+from sidecar.EegJSON import EegJSON
+from sidecar.SessionsTSV import SessionsTSV
+from sidecar.ChannelsTSV import ChannelsTSV
+
+import sys, os, pprint
+print("PYTHON EXE:", sys.executable)
+print("PYTHONPATH env:", os.environ.get("PYTHONPATH"))
+pprint.pp(sys.path[:10])
 
 # ==== Helper Functions ==== #
+
+def extract_edf_metadata(edf_file_path):
+    """
+    Extract metadata from EDF file for eeg.json sidecar.
+    
+    Args:
+        edf_file_path (str): Path to the EDF file
+        
+    Returns:
+        dict: Dictionary containing EDF metadata
+    """
+    try:
+        import pyedflib
+        f = pyedflib.EdfReader(edf_file_path)
+        
+        # Count different channel types using the same logic as ChannelsTSV
+        channel_counts = {"EEG": 0, "ECG": 0, "EMG": 0, "EOG": 0, "MISC": 0, "TRIG": 0}
+        
+        # Import the ChannelsTSV class to use its determine_channel_type method
+        from sidecar.ChannelsTSV import ChannelsTSV
+        
+        # Get sampling frequency using your calculation method (more robust)
+        total_samples = f.getNSamples()[0]  # samples from first channel
+        duration = f.getFileDuration()
+        sampling_frequency = total_samples / duration
+        
+        # Alternative: EDF header method (also works since all channels have same rate)
+        # sampling_frequency = f.getSampleFrequency(0)
+        
+        for i in range(f.signals_in_file):
+            label = f.getLabel(i)
+            # Use the same classification logic as ChannelsTSV
+            channel_type = ChannelsTSV.determine_channel_type(label)
+            
+            # Map channel types to our counting categories
+            if channel_type == "EEG":
+                channel_counts["EEG"] += 1
+            elif channel_type == "ECG":
+                channel_counts["ECG"] += 1
+            elif channel_type == "EMG":
+                channel_counts["EMG"] += 1
+            elif channel_type == "EOG":
+                channel_counts["EOG"] += 1
+            else:  # "MISC" and others
+                channel_counts["MISC"] += 1
+        
+        metadata = {
+            "SamplingFrequency": sampling_frequency,
+            "RecordingDuration": f.getFileDuration(),
+            "EEGChannelCount": channel_counts["EEG"],
+            "ECGChannelCount": channel_counts["ECG"], 
+            "EMGChannelCount": channel_counts["EMG"],
+            "EOGChannelCount": channel_counts["EOG"],
+            "MiscChannelCount": channel_counts["MISC"],
+            "TriggerChannelCount": channel_counts["TRIG"],
+        }
+        
+        f.close()
+        return metadata
+        
+    except ImportError:
+        print("Warning: pyedflib not installed. Using placeholder values.")
+        return {
+            "SamplingFrequency": 2000,  # Placeholder
+            "RecordingDuration": 0,
+            "EEGChannelCount": 0,
+            "ECGChannelCount": 0,
+            "EMGChannelCount": 0, 
+            "EOGChannelCount": 0,
+            "MiscChannelCount": 0,
+            "TriggerChannelCount": 0,
+        }
+    except Exception as e:
+        print(f"Warning: Could not extract EDF metadata: {e}")
+        return {}
+
+
+def extract_edf_channels(edf_file_path):
+    """
+    Extract channel information from EDF file for channels.tsv sidecar.
+    
+    Args:
+        edf_file_path (str): Path to the EDF file
+        
+    Returns:
+        list: List of channel dictionaries
+    """
+    try:
+        import pyedflib
+        f = pyedflib.EdfReader(edf_file_path)
+        
+        channels = []
+        for i in range(f.signals_in_file):
+            label = f.getLabel(i)
+            sampling_freq = f.getSampleFrequency(i)
+            
+            channels.append({
+                "name": label,
+                "sampling_frequency": sampling_freq,
+            })
+        
+        f.close()
+        return channels
+        
+    except ImportError:
+        print("Warning: pyedflib not installed. Using placeholder channels.")
+        # Placeholder channels from current code
+        placeholder_channels = [
+            "Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4", 
+            "O1", "O2", "F7", "F8", "T3", "T4", "T5", "T6",
+            "Fz", "Cz", "Pz", "EKG1", "EOG1"
+        ]
+        return [{"name": ch, "sampling_frequency": 2000} for ch in placeholder_channels]
+        
+    except Exception as e:
+        print(f"Warning: Could not extract EDF channels: {e}")
+        return []
+
+
 def find_bids_path(output_dir):
     """
     Find all EEG session directories in the output folder.
@@ -21,20 +145,20 @@ def find_bids_path(output_dir):
     path = []
     output_path = Path(output_dir)
     
-    # Pattern: output/PRV-{patient_id}/primary/sub-PRV-{patient_id}/ses-visit-m{age}/eeg/
+    # Pattern: output/PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/
     for dataset_dir in output_path.glob("PRV-*"):
         patient_id = dataset_dir.name.replace("PRV-", "")
         
         # Navigate to subject directory
-        subject_dir = dataset_dir / "primary" / f"sub-PRV-{patient_id}"
+        subject_dir = dataset_dir / "primary" / f"sub-{patient_id}"
         
         if not subject_dir.exists():
             continue
         
         # Find all session directories
-        for session_dir in subject_dir.glob("ses-visit-m*"):
-            # Extract age from session name (ses-visit-m15 -> 15)
-            age = session_dir.name.replace("ses-visit-m", "")
+        for session_dir in subject_dir.glob("ses-visit*m"):
+            # Extract age from session name (ses-visit15m -> 15)
+            age = session_dir.name.replace("ses-visit", "").replace("m", "")
             
             # Check for eeg directory
             eeg_dir = session_dir / "eeg"
@@ -59,42 +183,27 @@ def find_bids_path(output_dir):
 def handle_eeg_json(path_info, output_base_dir):
     """
     Generate eeg.json sidecar.
-    For now, uses default values for testing.
+    Extracts metadata from the corresponding EDF file.
     """
     patient_id = path_info['patient_id']    
     age = path_info['age']
     subject_dir = path_info['subject_dir']
     session_dir = path_info['session_dir']
-    #eeg_dir = path_info['eeg_dir']
-    #edf_file = path_info['edf_file']
-        
-    # For testing: use placeholder values (no EDF extraction yet)
-    # TODO: Replace with actual EDF extraction
-    edf_data = {
-        "SamplingFrequency": 2000,  # Placeholder for testing
-    }
+    eeg_dir = path_info['eeg_dir']
+    edf_file = path_info['edf_file']
     
-    # TODO: Uncomment this when ready to extract from EDF
-    '''
-    import pyedflib
-    f = pyedflib.EdfReader(edf_file)
-    edf_data = {
-        "SamplingFrequency": f.getSampleFrequency(0),
-        "RecordingDuration": f.getFileDuration(),
-        "EEGChannelCount": f.signals_in_file,
-    }
-    f.close()
-    '''
+    # Extract metadata from EDF file
+    edf_data = extract_edf_metadata(edf_file)
     
     # Calculate the bids_path relative to output_base_dir
-    # We want: PRV-{patient_id}/primary/sub-PRV-{patient_id}/ses-visit-m{age}/eeg/
-    bids_path = f"PRV-{patient_id}/primary/sub-PRV-{patient_id}/ses-visit-m{age}/eeg/"
+    # We want: PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/
+    bids_path = f"PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/"
     
-    # Create custom filename following BIDS format: sub-PRV-<ptid>-<age>_task-rest_eeg.json
-    custom_filename = f"sub-PRV-{patient_id}-{age}_task-rest_eeg.json"
+    # Create custom filename following new naming format: sub-<ptid>_ses-visit<age>m_task-prv_eeg.json
+    custom_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv_eeg.json"
     
     # Create sidecar with extracted data (or defaults)
-    eeg_sidecar = eegJSON(
+    eeg_sidecar = EegJSON(
         fields=edf_data,
         bids_path=bids_path,
         filename=custom_filename
@@ -128,21 +237,24 @@ def handle_sessions_tsv(patient_id, sessions_data, output_base_dir):
     # Create TSV rows
     rows = []
     for i, session in enumerate(sorted_sessions):
-        age = session['age']
-        # First session is baseline, rest are followup
-        visit_type = "baseline" if i == 0 else "followup"
+        age = float(session['age'])
+        # Baseline only if it's the smallest age AND age is between 1.5 to 6 months
+        if i == 0 and 1.5 <= age <= 6:
+            visit_type = "baseline"
+        else:
+            visit_type = "followup"
         
         rows.append({
-            "session": f"ses-visit-m{age}",
+            "session": f"ses-visit{int(age)}m",
             "visit_type": visit_type,
-            "age_in_months": float(age)
+            "age_in_months": age
         })
     
-    # Calculate bids_path: PRV-{patient_id}/primary/sub-PRV-{patient_id}/
-    bids_path = f"PRV-{patient_id}/primary/sub-PRV-{patient_id}/"
+    # Calculate bids_path: PRV-{patient_id}/primary/sub-{patient_id}/
+    bids_path = f"PRV-{patient_id}/primary/sub-{patient_id}/"
     
     # Create custom filename
-    custom_filename = f"sub-PRV-{patient_id}_sessions.tsv"
+    custom_filename = f"sub-{patient_id}_sessions.tsv"
     
     # Create sidecar
     sessions_sidecar = SessionsTSV(
@@ -164,6 +276,7 @@ def handle_sessions_tsv(patient_id, sessions_data, output_base_dir):
 def handle_channels_tsv(path_info, output_base_dir):
     """
     Generate channels.tsv for a specific EEG session.
+    Extracts channel information from the corresponding EDF file.
     
     Args:
         path_info: Dictionary with path information (patient_id, age, edf_file, etc.)
@@ -176,29 +289,17 @@ def handle_channels_tsv(path_info, output_base_dir):
     age = path_info['age']
     edf_file = path_info['edf_file']
     
-    # TODO: Replace with actual EDF extraction using pyedflib
-    # For now, use placeholder channels
-    placeholder_channels = [
-        "Fp1", "Fp2", "F3", "F4", "C3", "C4", "P3", "P4", 
-        "O1", "O2", "F7", "F8", "T3", "T4", "T5", "T6",
-        "Fz", "Cz", "Pz", "EKG1", "EOG1"
-    ]
+    # Extract channel information from EDF file
+    channels_from_edf = extract_edf_channels(edf_file)
     
-    # TODO: Uncomment when ready to extract from EDF
-    '''
-    import pyedflib
-    f = pyedflib.EdfReader(edf_file)
-    placeholder_channels = [f.getLabel(i) for i in range(f.signals_in_file)]
-    sampling_freq = f.getSampleFrequency(0)
-    f.close()
-    '''
-    
-    # For now, use placeholder sampling frequency
-    sampling_freq = 2000
+    # Use default sampling frequency if extraction fails
+    default_sampling_freq = 2000
     
     # Create channel rows
     rows = []
-    for channel_name in placeholder_channels:
+    for channel_info in channels_from_edf:
+        channel_name = channel_info["name"]
+        sampling_freq = channel_info.get("sampling_frequency", default_sampling_freq)
         channel_type = ChannelsTSV.determine_channel_type(channel_name)
         
         rows.append({
@@ -211,11 +312,11 @@ def handle_channels_tsv(path_info, output_base_dir):
             "notch": "n/a"
         })
     
-    # Calculate bids_path: PRV-{patient_id}/primary/sub-PRV-{patient_id}/ses-visit-m{age}/eeg/
-    bids_path = f"PRV-{patient_id}/primary/sub-PRV-{patient_id}/ses-visit-m{age}/eeg/"
+    # Calculate bids_path: PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/
+    bids_path = f"PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/"
     
-    # Create custom filename: sub-PRV-<ptid>-<age>_task-rest_channels.tsv
-    custom_filename = f"sub-PRV-{patient_id}-{age}_task-rest_channels.tsv"
+    # Create custom filename: sub-<ptid>_ses-visit<age>m_task-prv_channels.tsv
+    custom_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv_channels.tsv"
     
     # Create sidecar
     channels_sidecar = ChannelsTSV(

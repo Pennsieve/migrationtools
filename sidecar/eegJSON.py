@@ -2,7 +2,7 @@ from jsonschema import Draft202012Validator
 from typing import Dict, Any
 from .Sidecar import Sidecar 
 
-class eegJSON(Sidecar):
+class EegJSON(Sidecar):
     """
     Represents the eegJSON.json BIDS sidecar.
 
@@ -43,38 +43,39 @@ class eegJSON(Sidecar):
     OPTIONAL_FIELDS = {
         "ManufacturerModelName",
         "SubjectArtefactDescription",
-        "Impedance",
     }
 
     DEFAULTS = {
         # Required fields with static defaults
-        "TaskName": "PREVeNT Study EEG",
-        "TaskDescription": "All video EEG studies will be recorded for one hour, incorporating both 20mins of sleep and wakefulness, recordings can be up to 80min to capture sleep",
+        "TaskName": "PRV",
+        "TaskDescription": "All video EEG studies will be recorded for one hour, incorporating both 20mins of sleep and wakefulness. Recordings can be up to 80min to attempt to capture sleep",
         "EEGReference": "Slightly anterior and slightly left of the Cz electrode",
-        "EEGGround": "slightly anterior and slightly right of the Cz electrode",
+        "EEGGround": "Slightly anterior and slightly right of the Cz electrode",
+        "SamplingFrequency": -1,
         "PowerLineFrequency": 60,
         "SoftwareFilters": {
             "Anti-aliasing filter": {
-                "half-amplitude cutoff (Hz)": 500,
-                "Roll-off": "6dB/Octave"
+                "half-amplitude cutoff (Hz)": 500
             }
         },
         # Recommended fields
-        "Manufacturer": "n/a",
+        "InstitutionName": "",
+        "Manufacturer": "",
+        "EEGChannelCount": -1,
+        "ECGChannelCount": -1,
+        "EMGChannelCount": -1,
+        "EOGChannelCount": -1,
+        "MiscChannelCount": -1,
+        "TriggerChannelCount": -1,
+        "RecordingDuration": -1,
         "RecordingType": "continuous",
-        "EEGPlacementScheme": "n/a",
-        "HardwareFilters": {
-            "ADC's decimation filter (hardware bandwidth limit)": {
-                "-3dB cutoff point (Hz)": 480,
-                "Filter order sinc response": 5
-            }
-        },
+        "EEGPlacementScheme": "",
+        "HardwareFilters": {},
         # Optional fields
-        "ManufacturerModelName": "n/a",
-        "SubjectArtefactDescription": "n/a",
+        "ManufacturerModelName": "",
+        "SubjectArtefactDescription": "",
         # Note: Fields with None are excluded - they should be provided when creating the sidecar
         # "SamplingFrequency": None,  # Must be provided from EDF
-        # "InstitutionName": None,
         # "EEGChannelCount": None,
         # "ECGChannelCount": None,
         # "EMGChannelCount": None,
@@ -82,7 +83,6 @@ class eegJSON(Sidecar):
         # "MiscChannelCount": None,
         # "TriggerChannelCount": None,
         # "RecordingDuration": None,
-        # "Impedance": None,
     }
 
     SCHEMA = {

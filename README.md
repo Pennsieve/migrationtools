@@ -1,3 +1,21 @@
+# Create a new environment for this project
+conda create -n eeg_uploader python=3.11
+
+# Activate it
+conda activate eeg_uploader
+
+# Install jsonschema and any other dependencies
+conda install jsonschema
+
+# Or if you have a requirements.txt file
+pip install -r requirements.txt
+
+
+
+
+
+
+
 # EEG File Reorganizer
 
 This tool reorganizes EDF and XML files from the input directory into a BIDS-like structure.
@@ -6,27 +24,14 @@ This tool reorganizes EDF and XML files from the input directory into a BIDS-lik
 
 The script takes EDF and XML files with naming pattern `PRV-{site}-{patient_id}-{age}[A].{extension}` and reorganizes them into:
 
-```
-output/
-├── PRV-{patient_id}/
-│   └── primary/
-│       └── sub-PRV-{patient_id}/
-│           ├── ses-baseline-{min_age}/
-│           │   └── eeg/
-│           │       ├── sub-PRV-{patient_id}-{min_age}.edf
-│           │       └── sub-PRV-{patient_id}-{min_age}.xml
-│           ├── ses-followup-{age}/
-│           │   └── eeg/
-│           │       ├── sub-PRV-{patient_id}-{age}.edf
-│           │       └── sub-PRV-{patient_id}-{age}.xml
-│           └── ...
-```
 
 ## Usage
 
 1. Install dependencies:
 ```bash
 pip install -r requirements.txt
+brew install coreutils
+conda install -c conda-forge jsonschema OR pip install jsonschema
 ```
 Also need to make sure you have coreutils (timeout) installed locally.
 

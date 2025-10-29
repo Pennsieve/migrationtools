@@ -124,33 +124,36 @@ class ChannelsTSV(Sidecar):
             channel_name: Name of the channel (e.g., "Fp1", "EKG1", "EOG1")
         
         Returns:
-            str: Channel type ("EEG", "ECG", "EOG", "MISC")
-        
-        TODO: Enhance this logic as needed for your specific data.
+            str: Channel type ("EEG", "ECG", "EOG", "EMG", "MISC")
         """
         channel_upper = channel_name.upper()
         
-        # ECG channels
-        if any(keyword in channel_upper for keyword in ["EKG", "ECG", "CARD"]):
+        # Specific EEG channel names (10-20 system)
+        # FpZ, Oz, Status, T1, T2,
+        eeg_channels = {
+            "FP1", "F3", "C3", "P3", "O1", 
+            "FP2", "F4", "C4", "P4", "O2", 
+            "F7", "T3", "T7", "T5", "P7", 
+            "F8", "T4", "T8", "T6", "P8", 
+            "FZ", "CZ", "PZ", "A1", "A2"
+        }
+        
+        # Check if channel is in the specific EEG set
+        if channel_upper in eeg_channels:
+            return "EEG"
+        
+        # ECG channels (also CARD?)
+        if any(keyword in channel_upper for keyword in ["EKG", "ECG"]):
             return "ECG"
         
         # EOG channels
-        if any(keyword in channel_upper for keyword in ["EOG", "EYE"]):
+        if any(keyword in channel_upper for keyword in ["EOG"]):
             return "EOG"
         
         # EMG channels
         if any(keyword in channel_upper for keyword in ["EMG", "MUSC"]):
             return "EMG"
         
-        # Default to EEG for standard EEG electrode names
-        # Common EEG electrode names based on 10-20 system
-        eeg_patterns = [
-            "FP", "F", "C", "P", "O", "T", "A",  # Standard positions
-            "Z",  # Midline
-        ]
-        
-        if any(channel_upper.startswith(pattern) or pattern in channel_upper for pattern in eeg_patterns):
-            return "EEG"
-        
-        # If unknown, default to MISC
+        # If unknown, default to MISC and print warning for review
+        print(f"Warning: Channel '{channel_name}' type unknown, defaulting to 'MISC'")
         return "MISC"

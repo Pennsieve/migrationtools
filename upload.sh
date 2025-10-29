@@ -37,7 +37,7 @@ record_result() {
 run_reorganization() {
 
     cd "$SCRIPT_DIR"
-    if ! python3 reorganize_to_bids.py; then
+    if ! python reorganize_to_bids.py; then
         log_message "[ERROR]: reorganize_to_bids.py failed"
         exit 1
     fi
@@ -46,7 +46,7 @@ run_reorganization() {
 generate_sidecars() {
 
     cd "$SCRIPT_DIR"
-    if ! python3 generate_bids_sidecars.py; then
+    if ! python generate_bids_sidecars.py; then
         log_message "[ERROR]: generate_bids_sidecars.py failed"
         exit 1
     fi

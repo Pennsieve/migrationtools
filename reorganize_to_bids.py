@@ -89,25 +89,25 @@ def create_bids_structure(files_by_patient, input_dir, output_dir):
         dataset_name = f"PRV-{patient_id}"
         
         # Create subject  structure
-        base_path = Path(output_dir) / dataset_name / "primary" / f"sub-{dataset_name}" # e.g. output/PRV-4ZHY/primary/sub-PRV-4ZHY
+        base_path = Path(output_dir) / dataset_name / "primary" / f"sub-{patient_id}" # e.g. output/PRV-4ZHY/primary/sub-4ZHY
         
         for age in ages:
-            # Create session name with visit-m<age> format
-            session = f"ses-visit-m{age}"
+            # Create session name with visit<age>m format
+            session = f"ses-visit{age}m"
             
             # Create session directory
-            session_path = base_path / session / "eeg" # e.g. output/PRV-4ZHY/primary/sub-PRV-4ZHY/ses-visit-m15/eeg
+            session_path = base_path / session / "eeg" # e.g. output/PRV-4ZHY/primary/sub-4ZHY/ses-visit15m/eeg
             session_path.mkdir(parents=True, exist_ok=True)
                         
             # Process files for this age
             for file_info in files_by_age[age]: # get files for this age
                 src_file = Path(input_dir) / file_info['filename']
                 
-                # Create new filename
+                # Create new filename with new naming convention
                 if file_info['extension'] == '.xml':
-                    new_filename = f"sub-{dataset_name}-{age}.xml" #e.g. sub-PRV-4ZHY-15.xml
+                    new_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv.xml" #e.g. sub-4ZHY_ses-visit15m_task-prv.xml
                 else:
-                    new_filename = f"sub-{dataset_name}-{age}.edf"
+                    new_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv.edf"
                 
                 dst_file = session_path / new_filename
                                 

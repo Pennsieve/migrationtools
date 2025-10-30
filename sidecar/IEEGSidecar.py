@@ -13,8 +13,8 @@ class IeegSidecar(Sidecar):
     - Warns on missing recommended or unknown extra fields
     """
 
-    default_filename = "ieeg.json"
-    default_bids_path = "bids_root/"
+    filename = "ieeg.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {
         "TaskName",

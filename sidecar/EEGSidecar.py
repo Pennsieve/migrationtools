@@ -12,8 +12,8 @@ class EEGSidecar(JSONSidecar):
     - Warns on missing recommended or unknown extra fields
     """
 
-    default_filename = "eeg.json"
-    default_bids_path = "bids_root/"
+    filename = "eeg.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {
         "TaskName",

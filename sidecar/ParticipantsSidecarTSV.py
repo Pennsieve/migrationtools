@@ -1,32 +1,30 @@
-import csv
 from typing import Dict, Any, List, Tuple
 from Sidecar import TSVSidecar
 
 
-class ElectrodesSidecar(TSVSidecar):
+class ParticipantsSideCarTSV(TSVSidecar):
     """
-    Represents the electrodes.tsv BIDS sidecar file.
+    Represents the sessions.tsv sidecar file.
     Stateless — caller provides data (list of dicts).
 
-    Each dict in data corresponds to one electrode row.
+    Each dict in data corresponds to one row.
     """
 
-    filename = "electrodes.tsv"
+    filename = "participants.tsv"
     file_format = "tsv"
 
-    REQUIRED_FIELDS = {"name", "x", "y", "z", "size"}
-    RECOMMENDED_FIELDS = {"material", "manufacturer", "group", "hemisphere"}
-    OPTIONAL_FIELDS = {"type", "impedance", "dimension", "roi"}
+    REQUIRED_FIELDS = {"participant_id","species","age","population","sex","handedness"}
+    RECOMMENDED_FIELDS = {}
+    OPTIONAL_FIELDS = {}
 
     def validate(self, data: List[Dict[str, Any]]) -> Tuple[bool, Dict[str, Any]]:
         """
-        Validate the electrodes.tsv structure.
+        Validate the sessions.tsv structure.
 
         - Ensures required columns are present.
         - Warns about missing recommended fields.
         - Warns about unexpected columns.
         - Ensures all rows contain consistent keys.
-        - Ensures numeric fields contain valid numbers.
         """
         errors, warnings = [], []
 
@@ -36,7 +34,7 @@ class ElectrodesSidecar(TSVSidecar):
         # Gather all columns found in the data
         all_fields = set().union(*(row.keys() for row in data))
 
-        # Field-level presence validation
+        # Validation checks
         missing_required = self.REQUIRED_FIELDS - all_fields
         missing_recommended = self.RECOMMENDED_FIELDS - all_fields
         extra_fields = all_fields - (
@@ -45,28 +43,18 @@ class ElectrodesSidecar(TSVSidecar):
 
         if missing_required:
             errors.append(f"Missing REQUIRED fields: {sorted(missing_required)}")
+
         if missing_recommended:
             warnings.append(f"Missing RECOMMENDED fields: {sorted(missing_recommended)}")
+
         if extra_fields:
             warnings.append(f"Extra (non-BIDS) fields detected: {sorted(extra_fields)}")
 
-        # Consistency: all rows have same keys
+        # Ensure all rows have the same keys
+        expected_cols = list(all_fields)
         for i, row in enumerate(data):
             if set(row.keys()) != all_fields:
                 warnings.append(f"Row {i+1} has inconsistent columns")
 
-        # Check numeric fields
-        numeric_fields = ["x", "y", "z", "size", "impedance"]
-        for i, row in enumerate(data):
-            for field in numeric_fields:
-                val = row.get(field)
-                if val not in (None, "n/a", "N/A"):
-                    try:
-                        float(val)
-                    except (TypeError, ValueError):
-                        errors.append(
-                            f"Row {i+1}: Field '{field}' must be numeric, got '{val}'"
-                        )
-
         ok = not errors
-        return ok, {"errors": errors, "warnings": warnings, "columns": sorted(all_fields)}
+        return ok, {"errors": errors, "warnings": warnings, "columns": expected_cols}

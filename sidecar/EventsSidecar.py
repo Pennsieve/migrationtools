@@ -11,7 +11,7 @@ class EventsSidecar(TSVSidecar):
     Each dict corresponds to one event row.
     """
 
-    default_filename = "events.tsv"
+    filename = "events.tsv"
     file_format = "tsv"
 
     REQUIRED_FIELDS = {"onset", "duration"}

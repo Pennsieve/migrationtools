@@ -11,7 +11,7 @@ class ChannelsSidecar(TSVSidecar):
     Each row corresponds to one recorded channel.
     """
 
-    default_filename = "channels.tsv"
+    filename = "channels.tsv"
     file_format = "tsv"
 
     # Field definitions based on BIDS iEEG specification

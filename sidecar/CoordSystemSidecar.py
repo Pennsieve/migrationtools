@@ -13,8 +13,8 @@ class CoordSystemSidecar(JSONSidecar):
     - Warns on missing recommended fields or unknown extras
     """
 
-    default_filename = "coordsystem.json"
-    default_bids_path = "bids_root/"
+    filename = "coordsystem.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {
         "iEEGCoordinateSystem",

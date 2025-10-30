@@ -12,8 +12,8 @@ class ParticipantsSidecar(JSONSidecar):
     with JSON schema structural validation.
     """
 
-    default_filename = "participants.json"
-    default_bids_path = "bids_root/"
+    filename = "participants.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {"participant_id"}
     RECOMMENDED_FIELDS = {

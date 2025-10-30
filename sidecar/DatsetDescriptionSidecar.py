@@ -13,8 +13,8 @@ class DatasetDescriptionSidecar(JSONSidecar):
     - Warns on missing recommended or unknown extra fields
     """
 
-    default_filename = "dataset_description.json"
-    default_bids_path = "bids_root/"
+    filename = "dataset_description.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {"Name", "BIDSVersion"}
     RECOMMENDED_FIELDS = {"HEDVersion", "DatasetType", "License", "Authors"}

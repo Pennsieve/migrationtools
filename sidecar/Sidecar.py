@@ -27,10 +27,10 @@ class Sidecar(ABC):
 
     excluded_fields = {"output_dir", "input_dir", "bids_path"}
 
-    default_filename: str = "sidecar.json"
-    default_bids_path: str = "bids_root/"
-    default_input_dir: str = "input/"
-    default_output_dir: str = "output/"
+    filename: str = "sidecar.json"
+    bids_path: str = "bids_root/"
+    input_dir: str = "input/"
+    output_dir: str = "output/"
     file_format: str = ""
 
     _logger: Optional[logging.Logger] = None
@@ -84,9 +84,9 @@ class Sidecar(ABC):
 
         # Get user supplied paths
         path_defaults = {
-            "bids_path": self.default_bids_path,
-            "input_dir": self.default_input_dir,
-            "output_dir": self.default_output_dir
+            "bids_path": self.bids_path,
+            "input_dir": self.input_dir,
+            "output_dir": self.output_dir
             }
         
         merged_paths = {**path_defaults, **kwargs}
@@ -158,7 +158,7 @@ class Sidecar(ABC):
                 )
 
         output_dir = kwargs.get("output_dir", None) or "output/json"
-        filename = self.default_filename
+        filename = self.filename
         file_path = os.path.join(output_dir, filename)
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 

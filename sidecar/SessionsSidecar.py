@@ -10,7 +10,7 @@ class SessionSidecar(TSVSidecar):
     Each dict in data corresponds to one row.
     """
 
-    default_filename = "sessions.tsv"
+    filename = "sessions.tsv"
     file_format = "tsv"
 
     REQUIRED_FIELDS = {"session_id"}

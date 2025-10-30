@@ -1,13 +1,14 @@
 import csv
 import os
 import re
-import sys
 import string
 import requests
+
 from urllib.parse import quote
+from pathlib import Path
 
 
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("PENNSIEVE_API_KEY")
 BASE_URL = "https://api.pennsieve.io"
 MASTER_CSV_PATH = "input/mastermigration_metadata.csv"
 OUTPUT_DIR = "output"
@@ -56,7 +57,7 @@ def get_dataset_packages(dataset_id):
     return response.json()
 
 
-def load_master_metadata(csv_path):
+def get_ref_gnd_map(csv_path):
     """Load EPS → (reference, ground) mapping from master CSV."""
     mapping = {}
     with open(csv_path, newline="") as f:
@@ -76,7 +77,7 @@ def sanitize_group_name(name: str) -> str:
     return re.sub(r"[^\w]", "", name)
 
 
-def get_sampling_frequency_from_json(node_id) -> str:
+def get_freq_duration(node_id) -> str:
     url = f"https://api.pennsieve.io/packages/download-manifest?api_key={API_KEY}"
 
     payload = { "nodeIds": [node_id] }
@@ -94,7 +95,11 @@ def get_sampling_frequency_from_json(node_id) -> str:
     response = requests.get(download_url)
     response.raise_for_status()
     ieeg_json =  response.json()
-    return ieeg_json.get("SamplingFrequency","n/a")
+
+    sampling_frequency = ieeg_json.get("SamplingFrequency","n/a")
+    duration = ieeg_json.get("RecordingDuration","n/a")
+
+    return {"sampling_frequency": sampling_frequency, "duration": duration}
 
 def make_output_name(dataset_name: str) -> str:
     """
@@ -119,13 +124,13 @@ def main():
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
 
-    master_map = load_master_metadata(MASTER_CSV_PATH)
-
+    master_map = get_ref_gnd_map(MASTER_CSV_PATH)
+    
     for ds in datasets:
         name = ds["content"]["name"]
         ds_id = ds["content"]["id"]
 
-        if not name.startswith("EPS"):
+        if not name.lower().startswith("eps") and not name.lower().startswith("pennepi"):
             continue
 
         print(f"\nProcessing dataset: {name}")
@@ -147,8 +152,20 @@ def main():
                 continue
 
             node_id = pkg.get("content").get("nodeId")
-            sampling_freq = get_sampling_frequency_from_json(node_id)
+            ieeg_json_data = get_freq_duration(node_id)
 
+            sampling_freq = ieeg_json_data["sampling_frequency"]
+            duration = ieeg_json_data["duration"]
+
+            # Write duration to file for later use
+            try:
+                penn_epi_name = make_output_name(name)
+                recording_duration_output = os.path.join(OUTPUT_DIR, "recording_durations")
+                path = Path(recording_duration_output) / f"{penn_epi_name}_recording_duration"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(str(duration))
+            except Exception as e:
+                print(f"Could not write to file: {e}")
 
         rows = []
         for pkg in packages:
@@ -156,7 +173,7 @@ def main():
             pkg_name = pkg_content.get("name", "")
             mef = pkg_name.lower().endswith(".mef")
             
-            if not mef:
+            if not mef or pkg_content.get("state") == "DELETED":
                 continue
 
             base_name = clean_basename(pkg_name)
@@ -199,7 +216,9 @@ def main():
         rows.sort(key=lambda r: r["name"].lower())
 
         output_name = make_output_name(name)
-        output_path = os.path.join(OUTPUT_DIR, f"{output_name}.csv")
+        full_output_path = os.path.join(OUTPUT_DIR, output_name, 'bids')
+        os.makedirs(full_output_path, exist_ok=True)
+        output_path = os.path.join(full_output_path, f"channels.tsv")
 
         print(f"Writing {len(rows)} rows → {output_path}")
 
@@ -209,7 +228,7 @@ def main():
         ]
 
         with open(output_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
             writer.writeheader()
             writer.writerows(rows)
 

@@ -4,13 +4,12 @@ Generate BIDS sidecar files for the reorganized EEG data.
 Discovers the BIDS structure and creates appropriate sidecars.
 """
 
-
+# ==== Set up ==== #
 # Basic setup
 import os
 import sys
 from pathlib import Path
 from collections import defaultdict
-
 
 # Import the generator modules
 from eeg_json_generator import handle_eeg_json

@@ -35,6 +35,11 @@ def extract_edf_metadata(edf_file_path):
 
         for i in range(f.signals_in_file):
             label = f.getLabel(i)
+            
+            # Skip "status" channel (case-insensitive)
+            if label.lower() == "status":
+                continue
+                
             # Use the same classification logic as ChannelsTSV
             channel_type = ChannelsTSV.determine_channel_type(label)
 

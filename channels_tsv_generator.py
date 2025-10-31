@@ -75,6 +75,11 @@ def handle_channels_tsv(path_info, output_base_dir):
     rows = []
     for channel_info in channels_from_edf:
         channel_name = channel_info["name"]
+        
+        # Skip "status" channel (case-insensitive)
+        if channel_name.lower() == "status":
+            continue
+            
         sampling_freq = channel_info.get("sampling_frequency", default_sampling_freq)
         channel_type = ChannelsTSV.determine_channel_type(channel_name)
 

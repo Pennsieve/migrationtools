@@ -97,13 +97,13 @@ def handle_channels_tsv(path_info, output_base_dir):
     bids_path = f"PRV-{patient_id}/primary/sub-{patient_id}/ses-visit{age}m/eeg/"
 
     # Create custom filename: sub-<ptid>_ses-visit<age>m_task-prv_channels.tsv
-    custom_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv_channels.tsv"
+    bids_filename = f"sub-{patient_id}_ses-visit{age}m_task-prv_channels.tsv"
 
     # Create sidecar
     channels_sidecar = ChannelsTSV(
         fields=rows,
         bids_path=bids_path,
-        filename=custom_filename
+        filename=bids_filename
     )
 
     # Validate and save

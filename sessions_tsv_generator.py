@@ -42,13 +42,13 @@ def handle_sessions_tsv(patient_id, sessions_data, output_base_dir):
     bids_path = f"PRV-{patient_id}/primary/sub-{patient_id}/"
 
     # Create custom filename
-    custom_filename = f"sub-{patient_id}_sessions.tsv"
+    bids_filename = f"sub-{patient_id}_sessions.tsv"
 
     # Create sidecar
     sessions_sidecar = SessionsTSV(
         fields=rows,
         bids_path=bids_path,
-        filename=custom_filename
+        filename=bids_filename
     )
 
     # Validate and save

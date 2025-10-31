@@ -10,9 +10,10 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 sys.path.append(str(Path(__file__).resolve().parents[1]))
-from logger.setup_logger import setup_logger
 
+from logger.setup_logger import setup_logger
 _logger_lock = threading.Lock()
+
 class Sidecar(ABC): # ABC = Abstract Base Class
     """
     Base class for all BIDS sidecar files.
@@ -31,8 +32,8 @@ class Sidecar(ABC): # ABC = Abstract Base Class
     # Exclude these fields from being treated as data fields
     excluded_fields = {"output_dir", "input_dir", "bids_path", "filename"}
 
-    default_filename: str = "sidecar.json"
-    default_bids_path: str = "bids_root/"
+    filename: str = "sidecar.json"
+    bids_path: str = "bids_root/"
 
     _logger: Optional[logging.Logger] = None
     _log_dir: str = "logs/sidecar_logs"
@@ -99,7 +100,7 @@ class Sidecar(ABC): # ABC = Abstract Base Class
         if not isinstance(fields, dict):
             raise TypeError("fields must be a dictionary")
 
-        path_defaults = {"bids_path": self.default_bids_path}
+        path_defaults = {"bids_path": self.bids_path}
         merged_paths = {**path_defaults, **kwargs}
 
         self.paths = {k: v for k, v in merged_paths.items() if k in self.excluded_fields}
@@ -107,7 +108,7 @@ class Sidecar(ABC): # ABC = Abstract Base Class
 
         # Handle custom filename if provided
         if "filename" in kwargs:
-            self.default_filename = kwargs["filename"]
+            self.filename = kwargs["filename"]
 
         for key, value in self.data.items():
             if not hasattr(self, key):
@@ -168,12 +169,12 @@ class Sidecar(ABC): # ABC = Abstract Base Class
         if not output_dir:
             output_dir = self.paths.get("output_dir", "output/json")
 
-        filename = getattr(self, "default_filename", "sidecar.json")
+        filename = getattr(self, "filename", "sidecar.json")
 
         if flat:
             file_path = os.path.join(output_dir, filename)
         else:
-            bids_path = self.paths.get("bids_path", self.default_bids_path)
+            bids_path = self.paths.get("bids_path", self.bids_path)
             file_path = os.path.join(output_dir, bids_path, filename)
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)

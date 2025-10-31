@@ -8,7 +8,6 @@ from CoordSystemSidecar import CoordSystemSidecar
 from ElectrodesSidecar import ElectrodesSidecar
 from EEGSidecar import EEGSidecar
 from EventsSidecar import EventsSidecar
-from channels_tsv_generator import *
 from helpers import *
 from pathlib import Path
 from typing import Dict, Any
@@ -70,6 +69,7 @@ def createEEGSidecar(name,data_map):
 
 def createElectrodesSidecar(name,data_map):
     # source:  Files/derivatives/ieeg_recon/module4/electrodes2ROI_mni.csv
+
 
     electrodes_data = [
             {

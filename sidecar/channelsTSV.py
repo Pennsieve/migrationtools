@@ -135,7 +135,8 @@ class ChannelsTSV(Sidecar):
             "FP2", "F4", "C4", "P4", "O2", 
             "F7", "T3", "T7", "T5", "P7", 
             "F8", "T4", "T8", "T6", "P8", 
-            "FZ", "CZ", "PZ", "A1", "A2"
+            "FZ", "CZ", "PZ", "A1", "A2",
+            "FPZ", "OZ", "T1", "T2"
         }
         
         # Check if channel is in the specific EEG set

@@ -28,9 +28,9 @@ def main():
         name = ds["content"]["name"]
         ds_id = ds["content"]["id"]
 
-        if not name.lower().strip().startswith("pennepi"):
-            # print(f"temp skip for {name}")
-            continue
+        # if not name.lower().strip().startswith("pennepi"):
+        #     # print(f"temp skip for {name}")
+        #     continue
 
         if not name.lower().startswith("eps") and not name.lower().startswith("pennepi"):
             continue
@@ -43,7 +43,6 @@ def main():
         sampling_freq = "n/a"
 
         # Get sampling frequency
-        print(packages)
         for pkg in packages:
             pkg_content = pkg.get("content", {})
             if pkg_content.get("state") == "DELETED" or pkg_content.get("state") == "DELETING":
@@ -108,6 +107,8 @@ def main():
                 reference, ground = master_map.get(name, ("unknown", "unknown"))
 
             group = sanitize_group_name(base_name)[:2]
+            if group.lower() in ["ek","ec"]:
+                group = "n/a"
 
             rows.append({
                 "name": base_name,

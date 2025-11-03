@@ -171,7 +171,7 @@ def createIEEGDataSidecar(name,key,data_map):
             "MiscChannelCount": 0,
         }
         with open(os.path.join(OUTPUT_DIR,name,"bids","channels.tsv")) as f:
-            reader = csv.DictReader(f)
+            reader = csv.DictReader(f,delimiter="\t")
             for line in reader:
                 if line["type"].lower().strip() == "ecog":
                     counts["ECOGChannelCount"] +=1
@@ -355,10 +355,6 @@ def ceateDatasetDescription(name):
             "ReferencesAndLinks": "",
             "GeneratedBy": [
                 {
-                "Name": "IEEG pre processing",
-                "Description": "MISSING",
-                },
-                {
                     "Name": "iEEG-BIDS Migration Tool",
                     "Version": "1.0.0",
                     "Description": "https://github.com/Pennsieve/migrationtools",
@@ -431,7 +427,7 @@ def main():
 
         ds_id = ds["content"]["id"]
 
-
+        # if not original_name.startswith("PennEPI"):
         if not original_name.startswith("EPS") and not original_name.startswith("PennEPI"):
             continue
 

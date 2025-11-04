@@ -34,39 +34,13 @@ def main():
     sub_dataset_tracker = {}
     parent_id_reference = {}
         
-    #  Build up parent id reference for later use
-    for ds in datasets:
-        dataset_name = ds["content"]["name"]
-        ds_id = ds["content"]["id"]
-
-        payload[dataset_name] = {}
-        parent_id_reference[dataset_name] = {}
-        packages = load_data(f"package_{dataset_name}")
-        if packages is None:
-            print("Fetching all packages from network...")
-            packages = get_dataset_packages(ds_id)
-            save_data(packages, f"package_{dataset_name}")
-
-        sub_dataset_tracker[dataset_name] = {}
-        for pkg in packages:
-            pkg_content = pkg.get("content", {})
-            pkg_name = pkg_content.get("name", "")
-            if pkg_name.lower().strip().startswith("d0"):
-                # set the parent ID as a key
-                parent_id_reference[dataset_name].update({pkg_content.get("id",""): pkg_name})
-                payload[dataset_name].update({pkg_name: {
-                    "sampling_frequency": None,
-                    "duration": None,
-                }})
-            else:
-                payload[dataset_name].update({
-                    "sampling_frequency": None,
-                    "duration": None,
-                })    
+    # Build up parent id reference for later use
+    build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference)    
 
     # Loop over all datasets and packages
     for ds in datasets:
         dataset_name = ds["content"]["name"]
+        ds_id = ds["content"]["id"]
         
         if not dataset_name.lower().startswith("eps") and not dataset_name.lower().startswith("pennepi"):
             continue
@@ -124,15 +98,61 @@ def main():
                 except Exception as e:
                     print(f"Could not write to file: {e}")
 
+
             if is_electrodes_csv:
-                node_id = pkg.get("content").get("nodeId")
-                
+                node_id = pkg_content.get("nodeId")
                 electrode_data = load_data(f"electrode_data_{node_id}")
-                if packages is None:
-                    print("Fetching all packages from network...")
+
+                if electrode_data is None:
+                    print("Fetching electrode data from network...")
                     electrode_data = get_electrode_data(node_id)
                     save_data(electrode_data, f"electrode_data_{node_id}")
 
+                # Determine which D0X this belongs to (if any)
+                parent_id = pkg_content.get("parentId")
+                parent_key = parent_id_reference[dataset_name].get(parent_id)
+
+                # Build electrode rows
+                electrode_rows = []
+                for e in electrode_data:
+                    name = e.get("labels", "").strip()
+                    if not name:
+                        continue
+                    electrode_rows.append({
+                        "name": name,
+                        "x": e.get("mm_x", ""),
+                        "y": e.get("mm_y", ""),
+                        "z": e.get("mm_z", ""),
+                        "size": 2,
+                        "hemisphere": name[0].upper(),
+                        "group": name[:2].upper(),
+                        "type": "SEEG",
+                        "roi": e.get("roi", ""),
+                    })
+
+                # Decide output folder
+                top_folder = make_output_name(dataset_name)
+                if parent_key and parent_key in payload[dataset_name]:
+                    full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key
+                else:
+                    full_output_path = Path(OUTPUT_DIR) / top_folder
+
+                full_output_path.mkdir(parents=True, exist_ok=True)
+
+                # Write electrodes.tsv
+                electrode_path = full_output_path / "electrodes.tsv"
+                print(f"Writing {len(electrode_rows)} electrodes → {electrode_path}")
+
+                fieldnames = [
+                    "name", "x", "y", "z", "size",
+                    "hemisphere", "group", "type", "roi"
+                ]
+                with open(electrode_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+                    writer.writeheader()
+                    writer.writerows(electrode_rows)
+
+                
 
         rows = []
         rows_by_parent = {}
@@ -245,9 +265,40 @@ def main():
                     writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
                     writer.writeheader()
                     writer.writerows(rows)
+                    
 
     save_data(payload, f"payload")
     print("\n✅ Done\n")
+
+def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference):
+    for ds in datasets:
+        dataset_name = ds["content"]["name"]
+        ds_id = ds["content"]["id"]
+
+        payload[dataset_name] = {}
+        parent_id_reference[dataset_name] = {}
+        packages = load_data(f"package_{dataset_name}")
+        if packages is None:
+            print("Fetching all packages from network...")
+            packages = get_dataset_packages(ds_id)
+            save_data(packages, f"package_{dataset_name}")
+
+        sub_dataset_tracker[dataset_name] = {}
+        for pkg in packages:
+            pkg_content = pkg.get("content", {})
+            pkg_name = pkg_content.get("name", "")
+            if pkg_name.lower().strip().startswith("d0"):
+                # set the parent ID as a key
+                parent_id_reference[dataset_name].update({pkg_content.get("id",""): pkg_name})
+                payload[dataset_name].update({pkg_name: {
+                    "sampling_frequency": None,
+                    "duration": None,
+                }})
+            else:
+                payload[dataset_name].update({
+                    "sampling_frequency": None,
+                    "duration": None,
+                })
     
 
 

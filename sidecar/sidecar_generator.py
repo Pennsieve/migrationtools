@@ -196,13 +196,15 @@ def createIEEGDataSidecar(name,key,data_map):
         except FileNotFoundError:
             return "n/a"
         
-    def get_recording_duration():
+    def get_recording_duration(key, sub_key=None):
+        payload = load_data("payload")
         try:
-            with open(os.path.join(OUTPUT_DIR,"recording_durations",f"{name}_recording_duration")) as f:
-                duration = f.readline()
-                return duration
-        except FileNotFoundError:
-            return "n/a"
+            if sub_key == None:
+                return payload[key]["duration"]
+            else:
+                return payload[key][sub_key]["duration"]
+        except KeyError as e:
+            return -1
         
     def get_channel_counts(path):
         counts = {
@@ -248,7 +250,7 @@ def createIEEGDataSidecar(name,key,data_map):
             path = f"{OUTPUT_DIR}/{name}/bids/{sub_key}"
             channels_path = os.path.join(OUTPUT_DIR, name,"bids",sub_key, "channels.tsv")
             sampling_frquency = get_sampling_frequency(channels_path)
-            recording_duration = get_recording_duration()
+            recording_duration = get_recording_duration(key,sub_key)
             channel_counts = get_channel_counts(channels_path)
 
             save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
@@ -256,7 +258,7 @@ def createIEEGDataSidecar(name,key,data_map):
         path = f"{OUTPUT_DIR}/{name}/bids"
         channels_path = os.path.join(OUTPUT_DIR, name, "bids", "channels.tsv")
         sampling_frquency = get_sampling_frequency(channels_path)
-        recording_duration = get_recording_duration()
+        recording_duration = get_recording_duration(key)
         channel_counts = get_channel_counts(channels_path)
         save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
 

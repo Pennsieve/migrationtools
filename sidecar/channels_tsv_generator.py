@@ -89,16 +89,6 @@ def main():
                     payload[dataset_name]["sampling_frequency"] = sampling_freq
                     payload[dataset_name]["duration"] = duration
 
-                # Write duration to file for later use
-                try:
-                    penn_epi_name = make_output_name(dataset_name)
-                    recording_duration_output = os.path.join(OUTPUT_DIR, "recording_durations")
-                    path = Path(recording_duration_output) / f"{penn_epi_name}_recording_duration"
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_text(str(duration))
-                except Exception as e:
-                    print(f"Could not write to file: {e}")
-
 
             if is_electrodes_csv:
                 # Save electrode csv data out since we'll need it later

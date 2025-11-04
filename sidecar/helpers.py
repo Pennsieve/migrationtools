@@ -8,8 +8,9 @@ import json
 import string
 import requests
 
-from urllib.parse import quote
 from pathlib import Path
+from typing import Dict, Any
+from urllib.parse import quote
 
 
 INPUT_FILE_PATH = "input/mastermigration_metadata.csv"
@@ -198,3 +199,55 @@ def load_data(name: str):
     except (json.JSONDecodeError, IOError) as e:
         print(f"⚠️ Could not load cache ({e})")
         return None
+    
+
+def multi_dataset_read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
+    """
+    Reads the master CSV and groups rows by EPS Number and sub-dataset (e.g., D01, D02...).
+
+    If an EPS has only one sub-dataset, that sub-dataset is flattened
+    into the root of that EPS entry.
+    """
+    data: Dict[str, Dict[str, Dict[str, Any]]] = {}
+
+    with path.open(newline='', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            eps = (row.get("EPS Number") or "").strip()
+            subdataset = (row.get("Dataset") or "").strip() or "XX"
+
+            if not eps:
+                continue  # skip rows with no EPS Number
+
+            # Initialize if needed
+            if eps not in data:
+                data[eps] = {}
+
+            # store row data under subdataset
+            data[eps][subdataset] = {
+                k: v for k, v in row.items() if k not in ("EPS Number", "Dataset")
+            }
+
+    # post-process: flatten EPS with only one subdataset
+    flattened: Dict[str, Dict[str, Any]] = {}
+    for eps, subdatasets in data.items():
+        if len(subdatasets) == 1:
+            # Extract the only subdataset’s dict
+            only_key = next(iter(subdatasets))
+            flattened[eps] = subdatasets[only_key]
+        else:
+            flattened[eps] = subdatasets
+
+    return flattened
+
+
+def read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
+    data = {}
+    with path.open(newline='', encoding='utf-8-sig') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            eps = row.get("EPS Number")
+            if not eps:
+                continue  # skip rows with no EPS Number
+            data[eps.strip()] = {k: v for k, v in row.items() if k != "EPS Number"}
+    return data

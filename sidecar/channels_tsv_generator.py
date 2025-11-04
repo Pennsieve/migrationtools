@@ -61,8 +61,9 @@ def main():
             pkg_name = pkg_content.get("name", "")
             ieeg_json = pkg_name.lower().strip().endswith("implant_ieeg.json")
             is_electrodes_csv = pkg_name.lower().strip() == "electrodes2roi_mni.csv"
+            is_electrodes_txt = pkg_name.lower().strip() == "electodes.txt"
             
-            if not ieeg_json and not is_electrodes_csv:
+            if not ieeg_json and not is_electrodes_csv and not is_electrodes_txt:
                 continue    
             
             if ieeg_json:
@@ -100,58 +101,24 @@ def main():
 
 
             if is_electrodes_csv:
+                # Save electrode csv data out since we'll need it later
                 node_id = pkg_content.get("nodeId")
-                electrode_data = load_data(f"electrode_data_{node_id}")
+                electrode_data = load_data(f"electrode_data_{dataset_name}")
 
                 if electrode_data is None:
                     print("Fetching electrode data from network...")
                     electrode_data = get_electrode_data(node_id)
-                    save_data(electrode_data, f"electrode_data_{node_id}")
+                    save_data(electrode_data, f"electrode_data_{dataset_name}")
 
-                # Determine which D0X this belongs to (if any)
-                parent_id = pkg_content.get("parentId")
-                parent_key = parent_id_reference[dataset_name].get(parent_id)
+            if is_electrodes_txt:
+                # Save electrode txt data out since we'll need it later
+                node_id = pkg_content.get("nodeId")
+                electrode_data = load_data(f"electrode_txt_data_{dataset_name}")
 
-                # Build electrode rows
-                electrode_rows = []
-                for e in electrode_data:
-                    name = e.get("labels", "").strip()
-                    if not name:
-                        continue
-                    electrode_rows.append({
-                        "name": name,
-                        "x": e.get("mm_x", ""),
-                        "y": e.get("mm_y", ""),
-                        "z": e.get("mm_z", ""),
-                        "size": 2,
-                        "hemisphere": name[0].upper(),
-                        "group": name[:2].upper(),
-                        "type": "SEEG",
-                        "roi": e.get("roi", ""),
-                    })
-
-                # Decide output folder
-                top_folder = make_output_name(dataset_name)
-                if parent_key and parent_key in payload[dataset_name]:
-                    full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key
-                else:
-                    full_output_path = Path(OUTPUT_DIR) / top_folder
-
-                full_output_path.mkdir(parents=True, exist_ok=True)
-
-                # Write electrodes.tsv
-                electrode_path = full_output_path / "electrodes.tsv"
-                print(f"Writing {len(electrode_rows)} electrodes → {electrode_path}")
-
-                fieldnames = [
-                    "name", "x", "y", "z", "size",
-                    "hemisphere", "group", "type", "roi"
-                ]
-                with open(electrode_path, "w", newline="") as f:
-                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
-                    writer.writeheader()
-                    writer.writerows(electrode_rows)
-
+                if electrode_data is None:
+                    print("Fetching electrode data from network...")
+                    electrode_data = get_electrode_data(node_id)
+                    save_data(electrode_data, f"electrode_txt_data_{dataset_name}") 
                 
 
         rows = []
@@ -231,11 +198,11 @@ def main():
                 payload[dataset_name][parent_key]["row_data"] = rows
 
                 top_folder = make_output_name(dataset_name) # e.g. EPS004
-                full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key # EPS004/D01
+                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids" / parent_key # EPS004/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / "channels.tsv"
-                print(f"Writing {len(rows)} rows → {output_path}")
+                # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [
                     "counter", "name", "type", "units", "low_cutoff", "high_cutoff",
@@ -251,11 +218,11 @@ def main():
                 payload[dataset_name]["row_data"] = rows
 
                 top_folder = make_output_name(dataset_name) # e.g. EPS005
-                full_output_path = Path(OUTPUT_DIR) / top_folder # EPS005/
+                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids" # EPS005/
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / "channels.tsv"
-                print(f"Writing {len(rows)} rows → {output_path}")
+                # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [
                     "counter", "name", "type", "units", "low_cutoff", "high_cutoff",

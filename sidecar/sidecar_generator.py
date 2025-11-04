@@ -67,31 +67,34 @@ def createEEGSidecar(name,data_map):
     eeg_sidecar = EEGSidecar(eeg_fields)
     eeg_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
-def createElectrodesSidecar(name,data_map):
+def createElectrodesSidecar(name):
     # source:  Files/derivatives/ieeg_recon/module4/electrodes2ROI_mni.csv
 
+    electrodes_payload = []
+    electrode_data = load_data(f"electrode_data_{name}")
 
-    electrodes_data = [
-            {
-                
-                "name": "LA01", # Comes from labels in electrodes2ROI_mni.csv
-                "x": -12.4, # mm_x
-                "y": 44.8, # mm_y
-                "z": 52.1, # mm_z
+    if electrode_data != None:
+        for data in electrode_data:
+            name = data.get("labels","")
+
+            electrodes_payload.append({
+                "name": name,
+                "x": data.get("mm_x",""),
+                "y": data.get("mm_y",""),
+                "z": data.get("mm_z",""),
                 "size": ELECTRODES_SIZE,
                 "manufacturer": ELECTRODES_MANUFACTURER,
-                "group": "LA", # Derived from Name. Use 1st 2 letters
-                "hemisphere": "L", # Derive from 1st letter of name
+                "group": name[:2].upper(),
+                "hemisphere": name[0].upper(),
                 "type": ELECTRODES_GROUP,
                 "dimension": "mm", # FROM: Files/derivatives/voxtool_ct/electodes.txt. use last two columns, reversed. ie: 10 1 -> 1x10
-                "roi": "insula", # Comes from Files/derivatives/ieeg_recon/module4/electrodes2ROI_mni.csv: roi
-            },
-        ]
+                "roi": data.get("roi",""),
+            })
 
-    sidecar = ElectrodesSidecar()
-    sidecar.save(data=electrodes_data, output_dir=f"output/{name}/bids")
+        sidecar = ElectrodesSidecar()
+        sidecar.save(data=electrodes_payload, output_dir=f"output/{name}/bids")
 
-def createCoordsSidecar(name,data_map):
+def createCoordsSidecar(name):
     coord_fields = {
             "IntendedFor": "bids::derivatives/freesurfer/mri/T1.nii.gz",
             "iEEGCoordinateSystem": "MNI152NLin6ASym",
@@ -148,19 +151,60 @@ def createChannelsDataSidecar(name,data_map):
     sidecar.save(data=channels_data, output_dir=f"output/{name}/bids")
 
 def createIEEGDataSidecar(name,key,data_map):
-    def get_sampling_frequency():
+
+    def save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data,path):
+
+        ieeg_data = {
+            "TaskName": TASK_NAME, # ok
+            "TaskDescription": IEEG_TASK_DESCRIPTION,# ok
+            "InstitutionName": INSTITUTION_NAME, # ok
+            "Manufacturer": data.get("Manufacturer","n/a"), # ok
+            "ManufacturersModelName": data.get("ManufacturersModelName","n/a"),
+            "ElectrodeManufacturer":data.get("ElectrodeManufacturer","n/a"),
+            "iEEGReference": data.get("iEEGReference","n/a"), # ok
+            "iEEGGround": data.get("iEEGGround","n/a"), # ok
+            "SamplingFrequency": sampling_frquency, #ok
+            "PowerLineFrequency": POWER_LINE_FREQUENCY, # ok
+            "SoftwareFilters": SOFTWARE_FILTERS,  # ok
+            "ECOGChannelCount": channel_counts["ECOGChannelCount"],  # ok
+            "SEEGChannelCount": channel_counts["SEEGChannelCount"],  # ok
+            "EEGChannelCount": channel_counts["EEGChannelCount"],  # ok
+            "EOGChannelCount": channel_counts["EOGChannelCount"],  # ok
+            "ECGChannelCount": channel_counts["ECGChannelCount"],  # ok
+            "EMGChannelCount": channel_counts["EMGChannelCount"],  # ok
+            "MiscChannelCount": channel_counts["MiscChannelCount"],  # ok
+            "RecordingDuration": recording_duration, # ok
+            "RecordingType": RECORDING_TYPE, # ok
+            "HardwareFilters":{
+                "Hardware bandwidth filter":{
+                    "min (Hz)": data.get("hardwarebandwith_in","n/a"),
+                    "max (Hz)": data.get("hardwarebandwith_max","n/a"),
+                }
+            }
+        }
+
+        sidecar = IeegSidecar(ieeg_data)
+        sidecar.save( output_dir=path)
+
+    def get_sampling_frequency(path):
         # Get Sampling Frequency and Recording duration
-        with open(os.path.join(OUTPUT_DIR,name, "bids", "channels.tsv")) as f:
-            reader = csv.DictReader(f,delimiter="\t")
-            row = next(reader)
-            return row.get("sampling_frequency","n/a")
+        try:
+            with open(path) as f:
+                reader = csv.DictReader(f, delimiter="\t")
+                row = next(reader)
+                return row.get("sampling_frequency", "n/a")
+        except FileNotFoundError:
+            return "n/a"
         
     def get_recording_duration():
-        with open(os.path.join(OUTPUT_DIR,"recording_durations",f"{name}_recording_duration")) as f:
-            duration = f.readline()
-            return duration
+        try:
+            with open(os.path.join(OUTPUT_DIR,"recording_durations",f"{name}_recording_duration")) as f:
+                duration = f.readline()
+                return duration
+        except FileNotFoundError:
+            return "n/a"
         
-    def get_channel_counts():
+    def get_channel_counts(path):
         counts = {
             "ECOGChannelCount": 0,
             "SEEGChannelCount": 0,
@@ -170,84 +214,87 @@ def createIEEGDataSidecar(name,key,data_map):
             "EMGChannelCount": 0,
             "MiscChannelCount": 0,
         }
-        with open(os.path.join(OUTPUT_DIR,name,"bids","channels.tsv")) as f:
-            reader = csv.DictReader(f,delimiter="\t")
-            for line in reader:
-                if line["type"].lower().strip() == "ecog":
-                    counts["ECOGChannelCount"] +=1
-                elif line["type"].lower().strip() == "seeg":
-                    counts["SEEGChannelCount"] +=1
-                elif line["type"].lower().strip() == "eeg":
-                    counts["EEGChannelCount"] +=1
-                elif line["type"].lower().strip() == "eog":
-                    counts["EOGChannelCount"] +=1
-                elif line["type"].lower().strip() == "ecg":
-                    counts["ECGChannelCount"] +=1
-                elif line["type"].lower().strip() == "emg":
-                    counts["EMGChannelCount"] +=1
-                else:
-                    counts["MiscChannelCount"] +=1
+        try:
+            with open(path) as f:
+                reader = csv.DictReader(f,delimiter="\t")
+                for line in reader:
+                    if line["type"].lower().strip() == "ecog":
+                        counts["ECOGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "seeg":
+                        counts["SEEGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "eeg":
+                        counts["EEGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "eog":
+                        counts["EOGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "ecg":
+                        counts["ECGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "emg":
+                        counts["EMGChannelCount"] +=1
+                    else:
+                        counts["MiscChannelCount"] +=1
+        except FileNotFoundError:
+            return counts
 
         return counts
     
-    sampling_frquency = get_sampling_frequency()
-    recording_duration = get_recording_duration()
-    channel_counts = get_channel_counts()
 
-    ieeg_data = {
-                        "TaskName": TASK_NAME, # ok
-                        "TaskDescription": IEEG_TASK_DESCRIPTION,# ok
-                        "InstitutionName": INSTITUTION_NAME, # ok
-                        "Manufacturer": data_map[key].get("Manufacturer","n/a"), # ok
-                        "ManufacturersModelName": data_map[key].get("ManufacturersModelName","n/a"),
-                        "ElectrodeManufacturer": data_map[key].get("ElectrodeManufacturer","n/a"),
-                        "iEEGReference": data_map[key].get("iEEGReference","n/a"), # ok
-                        "iEEGGround": data_map[key].get("iEEGGround","n/a"), # ok
-                        "SamplingFrequency": sampling_frquency, #ok
-                        "PowerLineFrequency": POWER_LINE_FREQUENCY, # ok
-                        "SoftwareFilters": SOFTWARE_FILTERS,  # ok
-                        "ECOGChannelCount": channel_counts["ECOGChannelCount"],  # ok
-                        "SEEGChannelCount": channel_counts["SEEGChannelCount"],  # ok
-                        "EEGChannelCount": channel_counts["EEGChannelCount"],  # ok
-                        "EOGChannelCount": channel_counts["EOGChannelCount"],  # ok
-                        "ECGChannelCount": channel_counts["ECGChannelCount"],  # ok
-                        "EMGChannelCount": channel_counts["EMGChannelCount"],  # ok
-                        "MiscChannelCount": channel_counts["MiscChannelCount"],  # ok
-                        "RecordingDuration": recording_duration, # ok
-                        "RecordingType": RECORDING_TYPE, # ok
-                        "HardwareFilters":{
-                            "Hardware bandwidth filter":{
-                                "min (Hz)": data_map[key].get("hardwarebandwith_in","n/a"),
-                                "max (Hz)": data_map[key].get("hardwarebandwith_max","n/a"),
-                            }
-                        }
-                    }
 
-    sidecar = IeegSidecar(ieeg_data)
-    sidecar.save( output_dir=f"output/{name}/bids")
+    # detect if this EPS has subdatasets (D01, D02, ...)
+    if any(k.startswith("D0") for k in data_map.get(key).keys()):
+        for sub_key, sub_data in data_map.get(key).items():
+            if not sub_key.startswith("D0"):
+                continue
+
+            path = f"{OUTPUT_DIR}/{name}/bids/{sub_key}"
+            channels_path = os.path.join(OUTPUT_DIR, name,"bids",sub_key, "channels.tsv")
+            sampling_frquency = get_sampling_frequency(channels_path)
+            recording_duration = get_recording_duration()
+            channel_counts = get_channel_counts(channels_path)
+
+            save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
+    else:
+        path = f"{OUTPUT_DIR}/{name}/bids"
+        channels_path = os.path.join(OUTPUT_DIR, name, "bids", "channels.tsv")
+        sampling_frquency = get_sampling_frequency(channels_path)
+        recording_duration = get_recording_duration()
+        channel_counts = get_channel_counts(channels_path)
+        save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
+
+    
 
 def createSessionsDataSidecar(name,key,data_map):
     # TODO: Check columns to pull from
+    try:
+        subject_age_session_postimplant = data_map[key].get("age_iEEGimplant","n/a")
+        subject_age_session_postsurgery = data_map[key].get("age_procedure","n/a")
+        subject_age_session_postsurgery_preimplant_anat = data_map[key].get("age_t3scan","n/a")
+        subject_age_session_postsurgery_preimplant_eeg = data_map[key].get("age_preeeg","n/a")
+    except KeyError as e:
+        subject_age_session_postimplant = "n/a"
+        subject_age_session_postsurgery = "n/a"
+        subject_age_session_postsurgery_preimplant_anat = "n/a"
+        subject_age_session_postsurgery_preimplant_eeg = "n/a"
+
     sessions_data = [
             {
                 "session_id": "ses-postimplant",
                 "session_description": "intracranial evaluation",
-                "subject_age_session": data_map[key].get("age_iEEGimplant","n/a"),
+                "subject_age_session": subject_age_session_postimplant,
             },
             {
                 "session_id": "ses-postsurgery",
                 "session_description": "post surgical treatment follow up, no sooner than 15months",
-                "subject_age_session": data_map[key].get("age_procedure","n/a"),
+                "subject_age_session": subject_age_session_postsurgery,
             },
             {
                 "session_id": "ses-preimplant/anat",
                 "session_description": "mri prior to intracranial evaluation",
-                "subject_age_session": data_map[key].get("age_t3scan","n/a"),
+                "subject_age_session": subject_age_session_postsurgery_preimplant_anat,
             },
             {
                 "session_id": "ses-preimplant/eeg",
                 "session_description": "eeg prior to intracranial evaluation",
-                "subject_age_session": data_map[key].get("age_preeeg","n/a"),
+                "subject_age_session": subject_age_session_postsurgery_preimplant_eeg,
             },
         ]
     session_sidecar = ParticipantsSideCarTSV()
@@ -255,12 +302,16 @@ def createSessionsDataSidecar(name,key,data_map):
     session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/bids")
 
 def createParticipantsTSVSidecar(name,key,data_map):
+    try:
+        sex = data_map[key].get("sex","n/a")
+    except KeyError as e:
+        sex = "n/a"
     pariticpant_data = [
             {
                 "participant_id": f"sub-{name}",
                 "species": SPECIES,
                 "population": POPULATION,
-                "sex": data_map[key].get("sex","n/a"), 
+                "sex": sex, 
             },
 
         ]
@@ -366,17 +417,6 @@ def ceateDatasetDescription(name):
 
     dd_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
-def read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
-    data = {}
-    with path.open(newline='', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            eps = row.get("EPS Number")
-            if not eps:
-                continue  # skip rows with no EPS Number
-            data[eps.strip()] = {k: v for k, v in row.items() if k != "EPS Number"}
-    return data
-
 def merge_csvs_by_eps(csv_path_1: str, csv_path_2: str) -> Dict[str, Dict[str, Any]]:
     """
     Merge two CSV files by the 'EPS Number' column.
@@ -416,15 +456,13 @@ def main():
     print(f"Total datasets fetched: {len(datasets)}")
 
     data_map = merge_csvs_by_eps(MASTER_MIGRATION_METADATA,MASTER_SUBJECT_METADATA)
-    migration_data_map = read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
+    migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 
     
 
     for ds in datasets:
         original_name = ds["content"]["name"]
-        
-
         ds_id = ds["content"]["id"]
 
         # if not original_name.startswith("PennEPI"):
@@ -441,11 +479,11 @@ def main():
 
         ceateDatasetDescription(name) # TODO: Missing description and name for GeneratedBy key from JB
         createParticipantsSidecar(name) # TODO: Needs to be replaced. JB to send
-        createParticipantsTSVSidecar(name,original_name,data_map)  # TODO: Confirm values. Linked with above
-        createSessionsDataSidecar(name,original_name,data_map) # TODO: JB to send new CSV
-        createIEEGDataSidecar(name,original_name,data_map) # TODO: Needs to be dataset specific
-        createCoordsSidecar(name,data_map) # TODO: Needs PREFIX
-        createElectrodesSidecar(name,data_map)
+        createParticipantsTSVSidecar(name,original_name,migration_subject_map)  # TODO: Confirm values. Linked with above
+        createSessionsDataSidecar(name,original_name,migration_subject_map) # TODO: JB to send new CSV
+        createIEEGDataSidecar(name,original_name,migration_hardware_data_map) # TODO: Needs to be dataset specific
+        createCoordsSidecar(name) # TODO: Needs PREFIX
+        createElectrodesSidecar(name)
 
 def rename(name):
     digits = ''.join(c for c in name if c.isdigit())

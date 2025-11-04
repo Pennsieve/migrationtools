@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class IeegSidecar(Sidecar):
+class IeegSidecar(JSONSidecar):
     """
     Represents the iEEG BIDS sidecar (e.g., sub-01_task-rest_ieeg.json).
 

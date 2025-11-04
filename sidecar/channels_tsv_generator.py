@@ -1,5 +1,6 @@
 from helpers import *
-
+import os, csv
+from pathlib import Path
 
 def get_ref_gnd_map(csv_path):
     """Load EPS → (reference, ground) mapping from master CSV."""
@@ -16,56 +17,106 @@ def get_ref_gnd_map(csv_path):
     return mapping
 
 def main():
+    keys_to_check = ["D01", "D02", "D03", "D04", "D05", "D06", "D07"]
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     print("Fetching all datasets...")
-    datasets = get_all_datasets()
+    datasets = load_data("datasets")
+    if datasets is None:
+        print("Fetching all packages from network...")
+        datasets = get_all_datasets()
+        save_data(datasets, "datasets")
+        
     print(f"Total datasets fetched: {len(datasets)}")
 
     master_map = get_ref_gnd_map(MASTER_CSV_PATH)
-    
+    payload = {}
+    sub_dataset_tracker = {}
+    parent_id_reference = {}
+        
+    #  Build up parent id reference for later use
     for ds in datasets:
-        name = ds["content"]["name"]
+        dataset_name = ds["content"]["name"]
         ds_id = ds["content"]["id"]
 
-        # if not name.lower().strip().startswith("pennepi"):
-        #     # print(f"temp skip for {name}")
-        #     continue
+        payload[dataset_name] = {}
+        parent_id_reference[dataset_name] = {}
+        packages = load_data(f"package_{dataset_name}")
+        if packages is None:
+            print("Fetching all packages from network...")
+            packages = get_dataset_packages(ds_id)
+            save_data(packages, f"package_{dataset_name}")
 
-        if not name.lower().startswith("eps") and not name.lower().startswith("pennepi"):
+        sub_dataset_tracker[dataset_name] = {}
+        for pkg in packages:
+            pkg_content = pkg.get("content", {})
+            pkg_name = pkg_content.get("name", "")
+            if pkg_name.lower().strip().startswith("d0"):
+                # set the parent ID as a key
+                parent_id_reference[dataset_name].update({pkg_content.get("id",""): pkg_name})
+                payload[dataset_name].update({pkg_name: {
+                    "sampling_frequency": None,
+                    "duration": None,
+                }})
+            else:
+                payload[dataset_name].update({
+                    "sampling_frequency": None,
+                    "duration": None,
+                })    
+
+    # Loop over all datasets and packages
+    for ds in datasets:
+        dataset_name = ds["content"]["name"]
+        
+        if not dataset_name.lower().startswith("eps") and not dataset_name.lower().startswith("pennepi"):
             continue
 
-        print(f"\nProcessing dataset: {name}")
+        packages = load_data(f"package_{dataset_name}")
+        if packages is None:
+            print("Fetching all packages from network...")
+            packages = get_dataset_packages(ds_id)
+            save_data(packages, f"package_{dataset_name}")
 
-        pkg_data = get_dataset_packages(ds_id)
-        packages = pkg_data.get("packages", [])
-        
         sampling_freq = "n/a"
 
-        # Get sampling frequency
+        # Get sampling frequency and duration, per sub dataset
         for pkg in packages:
             pkg_content = pkg.get("content", {})
             if pkg_content.get("state") == "DELETED" or pkg_content.get("state") == "DELETING":
                 continue
             pkg_name = pkg_content.get("name", "")
-
             ieeg_json = pkg_name.lower().strip().endswith("implant_ieeg.json")
             is_electrodes_csv = pkg_name.lower().strip() == "electrodes2roi_mni.csv"
-            # print(pkg_name.lower().strip())
             
             if not ieeg_json and not is_electrodes_csv:
-                continue
-
+                continue    
+            
             if ieeg_json:
                 node_id = pkg.get("content").get("nodeId")
-                ieeg_json_data = get_freq_duration(node_id)
+                
+                ieeg_json_data = load_data(f"ieeg_json_data_{node_id}")
+                if ieeg_json_data is None:
+                    print("Fetching all packages from network...")
+                    ieeg_json_data = get_freq_duration(node_id)
+                    save_data(ieeg_json_data,f"ieeg_json_data_{node_id}")
 
                 sampling_freq = ieeg_json_data["sampling_frequency"]
                 duration = ieeg_json_data["duration"]
 
+                keys_to_check = ["D01", "D02", "D03", "D04", "D05"]
+
+                if parent_id_reference[dataset_name].get(pkg_content.get("parentId")) in keys_to_check:
+                    parent_id = pkg_content.get("parentId")
+                    
+                    payload[dataset_name][parent_id_reference[dataset_name][parent_id]]["sampling_frequency"] = sampling_freq
+                    payload[dataset_name][parent_id_reference[dataset_name][parent_id]]["duration"] = duration
+                else:
+                    payload[dataset_name]["sampling_frequency"] = sampling_freq
+                    payload[dataset_name]["duration"] = duration
+
                 # Write duration to file for later use
                 try:
-                    penn_epi_name = make_output_name(name)
+                    penn_epi_name = make_output_name(dataset_name)
                     recording_duration_output = os.path.join(OUTPUT_DIR, "recording_durations")
                     path = Path(recording_duration_output) / f"{penn_epi_name}_recording_duration"
                     path.parent.mkdir(parents=True, exist_ok=True)
@@ -75,22 +126,29 @@ def main():
 
             if is_electrodes_csv:
                 node_id = pkg.get("content").get("nodeId")
-                electrode_data = get_electrode_data(node_id)
-                print(electrode_data)
-                breakpoint()
+                
+                electrode_data = load_data(f"electrode_data_{node_id}")
+                if packages is None:
+                    print("Fetching all packages from network...")
+                    electrode_data = get_electrode_data(node_id)
+                    save_data(electrode_data, f"electrode_data_{node_id}")
+
 
         rows = []
+        rows_by_parent = {}
+        
+        # build up row object for tsv writing
         for pkg in packages:
             pkg_content = pkg.get("content", {})
             pkg_name = pkg_content.get("name", "")
             mef = pkg_name.lower().endswith(".mef")
             
+
             if not mef or pkg_content.get("state") == "DELETED" or pkg_content.get("state") == "DELETING":
                 continue
 
             base_name = clean_basename(pkg_name)
             
-
             is_ekg = "ekg" in base_name.lower()
 
             # Fill columns
@@ -104,13 +162,15 @@ def main():
                 reference = "unknown"
                 ground = "unknown"
             else:
-                reference, ground = master_map.get(name, ("unknown", "unknown"))
+                reference, ground = master_map.get(dataset_name, ("unknown", "unknown"))
 
             group = sanitize_group_name(base_name)[:2]
             if group.lower() in ["ek","ec"]:
                 group = "n/a"
 
-            rows.append({
+            parent_id = parent_id = pkg_content.get("parentId")
+
+            row ={
                 "name": base_name,
                 "type": type_,
                 "units": units,
@@ -121,32 +181,74 @@ def main():
                 "group": group,
                 "sampling_frequency": sampling_freq,
                 "notch": notch,
-            })
+            }
 
-        if not rows:
-            print(f"⚠️ No .mef files found in {name}, skipping.")
-            continue
+            rows_by_parent.setdefault(parent_id, []).append(row)
+        
+        # Add rows to payload:  rows_by_parent
+        for parent_id, rows in rows_by_parent.items():
+            rows.sort(key=lambda r: r["name"].lower())
+            
 
-        rows.sort(key=lambda r: r["name"].lower())
+            if any(k in payload[dataset_name] for k in keys_to_check):
+                parent_key = parent_id_reference[dataset_name].get(parent_id)
+                if parent_key:
+                    payload[dataset_name][parent_key]["row_data"] = rows
+            else:
+                payload[dataset_name]["row_data"] = rows
+ 
 
-        output_name = make_output_name(name)
-        full_output_path = os.path.join(OUTPUT_DIR, output_name, 'bids')
-        os.makedirs(full_output_path, exist_ok=True)
-        output_path = os.path.join(full_output_path, f"channels.tsv")
+        # loop through rows_by_parent and save to file
+        for parent_id, rows in rows_by_parent.items():
+            rows.sort(key=lambda r: r["name"].lower())
 
-        print(f"Writing {len(rows)} rows → {output_path}")
+            if any(k in payload[dataset_name] for k in keys_to_check):
+                #  multi-day / sub-dataset case
+                parent_key = parent_id_reference[dataset_name].get(parent_id)
+                if not parent_key:
+                    continue
 
-        fieldnames = [
-            "name", "type", "units", "low_cutoff", "high_cutoff",
-            "reference", "ground", "group", "sampling_frequency", "notch"
-        ]
+                payload[dataset_name][parent_key]["row_data"] = rows
 
-        with open(output_path, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
-            writer.writeheader()
-            writer.writerows(rows)
+                top_folder = make_output_name(dataset_name) # e.g. EPS004
+                full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key # EPS004/D01
+                full_output_path.mkdir(parents=True, exist_ok=True)
 
+                output_path = full_output_path / "channels.tsv"
+                print(f"Writing {len(rows)} rows → {output_path}")
+
+                fieldnames = [
+                    "counter", "name", "type", "units", "low_cutoff", "high_cutoff",
+                    "reference", "ground", "group", "sampling_frequency", "notch"
+                ]
+                with open(output_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+                    writer.writeheader()
+                    writer.writerows(rows)
+
+            else:
+                # single-dataset case (no D0X keys)
+                payload[dataset_name]["row_data"] = rows
+
+                top_folder = make_output_name(dataset_name) # e.g. EPS005
+                full_output_path = Path(OUTPUT_DIR) / top_folder # EPS005/
+                full_output_path.mkdir(parents=True, exist_ok=True)
+
+                output_path = full_output_path / "channels.tsv"
+                print(f"Writing {len(rows)} rows → {output_path}")
+
+                fieldnames = [
+                    "counter", "name", "type", "units", "low_cutoff", "high_cutoff",
+                    "reference", "ground", "group", "sampling_frequency", "notch"
+                ]
+                with open(output_path, "w", newline="") as f:
+                    writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
+                    writer.writeheader()
+                    writer.writerows(rows)
+
+    save_data(payload, f"payload")
     print("\n✅ Done\n")
+    
 
 
 if __name__ == "__main__":

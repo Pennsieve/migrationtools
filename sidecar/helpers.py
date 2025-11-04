@@ -1,8 +1,10 @@
 # Helpers functions
+
 import csv
 import io
 import os
 import re
+import json
 import string
 import requests
 
@@ -36,6 +38,7 @@ MASTER_CSV_PATH = "input/mastermigration_metadata.csv"
 OUTPUT_DIR = "output"
 PAGE_SIZE = 25
 IEEG_JSON_PATH = "output/bids"
+CACHE_DIR = "cache"
 
 def get_all_datasets():
     """Paginate through all datasets from Pennsieve API."""
@@ -65,16 +68,34 @@ def get_all_datasets():
     return datasets
 
 def get_dataset_packages(dataset_id):
-    """Return all packages for a dataset."""
+    """Return all packages for a dataset, handling pagination."""
     encoded_id = quote(dataset_id, safe="")
-    url = (
+    base_url = (
         f"{BASE_URL}/datasets/{encoded_id}/packages?"
         f"pageSize=1000&includeSourceFiles=false&api_key={API_KEY}"
     )
     headers = {"accept": "*/*"}
-    response = requests.get(url, headers=headers)
-    response.raise_for_status()
-    return response.json()
+    
+    all_packages = []
+    cursor = None
+    
+    while True:
+        url = f"{base_url}&cursor={cursor}" if cursor else base_url
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        # Assuming packages are in a key like 'packages' or 'items'
+        # You'll need to adjust this based on actual response structure
+        all_packages.extend(data.get('packages', []))
+        
+        # Check if there's a next page
+        cursor = data.get('cursor')
+        if not cursor:
+            break
+    
+    return all_packages
 
 def sanitize_group_name(name: str) -> str:
     """Strip punctuation and spaces from name for group column."""
@@ -104,7 +125,7 @@ def get_freq_duration(node_id) -> str:
 
     return {"sampling_frequency": sampling_frequency, "duration": duration}
 
-def get_electrode_data(node_id: str, api_key: str):
+def get_electrode_data(node_id: str):
     manifest_url = "https://api.pennsieve.io/packages/download-manifest"
 
     payload = {"nodeIds": [node_id]}
@@ -113,7 +134,7 @@ def get_electrode_data(node_id: str, api_key: str):
         "content-type": "application/json"
     }
 
-    resp = requests.post(f"{manifest_url}?api_key={api_key}", json=payload, headers=headers)
+    resp = requests.post(f"{manifest_url}?api_key={API_KEY}", json=payload, headers=headers)
     resp.raise_for_status()
 
     manifest = resp.json()
@@ -128,7 +149,6 @@ def get_electrode_data(node_id: str, api_key: str):
     file_resp = requests.get(download_url)
     file_resp.raise_for_status()
 
-    # Step 3: Parse CSV directly into memory
     csv_text = file_resp.text
     reader = csv.DictReader(io.StringIO(csv_text))
     rows = list(reader)
@@ -149,3 +169,32 @@ def clean_basename(pkg_name: str) -> str:
     name = re.sub(r"(eeg|-ref)", "", name)
     name = name.translate(str.maketrans("", "", string.punctuation))
     return name.strip().upper() 
+
+def save_data(data, name: str):
+    """
+    Save data (dict, list, etc.) to a JSON file in the cache directory.
+    """
+    file_path = os.path.join(CACHE_DIR, f"{name}.json")
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    # print(f"✅ Saved data to {file_path}")
+
+
+def load_data(name: str):
+    """
+    Load cached data if it exists.
+    Returns None if the file does not exist or cannot be read.
+    Allows empty lists/dicts as valid cached results.
+    """
+    file_path = os.path.join(CACHE_DIR, f"{name}.json")
+    if not os.path.exists(file_path):
+        return None
+
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        # print(f"📦 Loaded cached data from {file_path}")
+        return data
+    except (json.JSONDecodeError, IOError) as e:
+        print(f"⚠️ Could not load cache ({e})")
+        return None

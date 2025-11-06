@@ -10,7 +10,7 @@ class SessionsTSV(Sidecar):
     Data should be a list of dictionaries, where each dictionary represents a row.
     """
 
-    default_filename = "sessions.tsv"
+    filename = "sessions.tsv"
     default_bids_path = "output_sidecars/"
 
     REQUIRED_FIELDS = {"session", "age_in_months", "visit_type"}
@@ -46,7 +46,7 @@ class SessionsTSV(Sidecar):
         
         # Handle custom filename if provided
         if "filename" in kwargs:
-            self.default_filename = kwargs["filename"]
+            self.filename = kwargs["filename"]
         
         self.json_indent = kwargs.pop("json_indent", self.json_indent)
         

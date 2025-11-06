@@ -70,7 +70,7 @@ class ChannelsTSV(Sidecar):
         
         # Handle custom filename if provided
         if "filename" in kwargs:
-            self.default_filename = kwargs["filename"]
+            self.filename = kwargs["filename"]
         
         self.json_indent = kwargs.pop("json_indent", self.json_indent)
         

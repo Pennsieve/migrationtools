@@ -7,9 +7,7 @@ from typing import Dict, Any
 from sidecar.EegJSON import EegJSON
 from sidecar.ChannelsTSV import ChannelsTSV
 
-MASTER_MIGRATION_METADATA = "input/mastermigration_metadata.csv"
-# MASTER_SUBJECT_METADATA = "input/mastersubject_metadata.csv"
-
+MASTER_MIGRATION_METADATA = "input/metadata/dummy.csv"
 
 # ==== helper functions to fetch info from EDF files and Spreadsheet ====
 def extract_edf_metadata(edf_file_path):
@@ -84,22 +82,20 @@ def extract_edf_metadata(edf_file_path):
 
 def read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
     """
-    Convert CSV into a dictionary of dictionaries indexed by Subject Number.
-
-    Args:
-        path: Path to CSV file
-
-    Returns:
-        dict: e.g., {'13UL': {'filename': 'PRV-001-13UL-10', 'age': 10, ...}, ...}
+    Convert CSV into a dictionary indexed by (patient_id, age).
+    Returns: dict like {('1W4Y', '3'): {...row data...}, ('1W4Y', '4.5'): {...}, ...}
     """
     data = {}
     with path.open(newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            subject_num = row.get("Subject Number")
-            if not subject_num:
-                continue  # skip rows with no Subject Number
-            data[subject_num.strip()] = {k: v for k, v in row.items() if k != "Subject Number"}
+            patient_id = row.get("patient_id")
+            age = row.get("Age")
+            if not patient_id or not age:
+                continue
+            # Use (patient_id, age) as composite key
+            key = (patient_id.strip(), age.strip())
+            data[key] = {k: v for k, v in row.items() if k not in ("patient_id", "Age")}
     return data
 
 
@@ -131,7 +127,7 @@ def handle_eeg_json(path_info, output_base_dir):
         return extract_edf_metadata(edf_file)
 
     def get_csv_data_map():
-        """Load and return the CSV data map indexed by Subject Number."""
+        """Load and return the CSV data map indexed by patient_id."""
         csv_path = Path(__file__).parent / MASTER_MIGRATION_METADATA
         if not csv_path.exists():
             print(f"    Warning: CSV metadata file not found at {csv_path}")
@@ -145,7 +141,7 @@ def handle_eeg_json(path_info, output_base_dir):
     # ---- Get data from sources
     edf_metadata = get_edf_metadata()
     data_map = get_csv_data_map()
-    patient_data = data_map.get(patient_id, {})
+    patient_data = data_map.get((patient_id, str(age)), {})
 
     if not patient_data:
         print(f"    Warning: No CSV metadata found for patient {patient_id}")
@@ -166,8 +162,8 @@ def handle_eeg_json(path_info, output_base_dir):
         },
 
         # Recommended fields - from CSV and EDF
-        "InstitutionName": patient_data.get("institution", ""),
-        "Manufacturer": patient_data.get("manufacturer", ""),
+        "InstitutionName": patient_data.get("InstitutionName", ""),
+        "Manufacturer": patient_data.get("Manufacturer", ""),
         "EEGChannelCount": edf_metadata.get("EEGChannelCount", -1),
         "ECGChannelCount": edf_metadata.get("ECGChannelCount", -1),
         "EMGChannelCount": edf_metadata.get("EMGChannelCount", -1),
@@ -176,7 +172,7 @@ def handle_eeg_json(path_info, output_base_dir):
         "TriggerChannelCount": edf_metadata.get("TriggerChannelCount", -1),
         "RecordingDuration": edf_metadata.get("RecordingDuration", -1),
         "RecordingType": "continuous",
-        "EEGPlacementScheme": patient_data.get("placement_scheme", ""),
+        "EEGPlacementScheme": patient_data.get("EEGPlacementScheme", ""),
         "HardwareFilters": {
             "Highpass filter": {
                 "cutoff (Hz)": float(patient_data.get("hardware_filter_low", 0)) if patient_data.get("hardware_filter_low") else 0
@@ -187,8 +183,8 @@ def handle_eeg_json(path_info, output_base_dir):
         },
 
         # Optional fields - from CSV
-        "ManufacturerModelName": patient_data.get("model", ""),
-        "SubjectArtefactDescription": patient_data.get("artefact_description", ""),
+        # "ManufacturerModelName": patient_data.get("model", ""),
+        "SubjectArtefactDescription": patient_data.get("SubjectArtefactDescription", ""),
     }
 
     # ---- Create sidecar and save

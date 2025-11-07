@@ -152,6 +152,7 @@ def createChannelsDataSidecar(name,data_map):
 
 def createIEEGDataSidecar(name,key,data_map):
 
+    # TODO: naming scheme sub-PennEPI00049-postimplant_ieeg.json
     def save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data,path):
 
         ieeg_data = {
@@ -183,8 +184,8 @@ def createIEEGDataSidecar(name,key,data_map):
             }
         }
 
-        sidecar = IeegSidecar(ieeg_data)
-        sidecar.save( output_dir=path)
+        sidecar = IeegSidecar(ieeg_data, filename=f"sub-{key}-postimplant_ieeg.json")
+        sidecar.save(output_dir=path)
 
     def get_sampling_frequency(path):
         # Get Sampling Frequency and Recording duration
@@ -260,12 +261,10 @@ def createIEEGDataSidecar(name,key,data_map):
         sampling_frquency = get_sampling_frequency(channels_path)
         recording_duration = get_recording_duration(key)
         channel_counts = get_channel_counts(channels_path)
-        save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
-
-    
+        save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)   
 
 def createSessionsDataSidecar(name,key,data_map):
-    # TODO: Check columns to pull from
+    # TODO: Change name pattern to  sub-{PennEPIXXXXX}_sessions.tsv
     try:
         subject_age_session_postimplant = data_map[key].get("age_iEEGimplant","n/a")
         subject_age_session_postsurgery = data_map[key].get("age_procedure","n/a")
@@ -293,13 +292,13 @@ def createSessionsDataSidecar(name,key,data_map):
                 "session_description": "mri prior to intracranial evaluation",
                 "subject_age_session": subject_age_session_postsurgery_preimplant_anat,
             },
-            {
-                "session_id": "ses-preimplant/eeg",
-                "session_description": "eeg prior to intracranial evaluation",
-                "subject_age_session": subject_age_session_postsurgery_preimplant_eeg,
-            },
+            # {
+            #     "session_id": "ses-preimplant/eeg",
+            #     "session_description": "eeg prior to intracranial evaluation",
+            #     "subject_age_session": subject_age_session_postsurgery_preimplant_eeg,
+            # },
         ]
-    session_sidecar = ParticipantsSideCarTSV()
+    session_sidecar = SessionSidecar(filename=f"sub-{key}_sessions.tsv")
 
     session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/bids")
 
@@ -322,29 +321,111 @@ def createParticipantsTSVSidecar(name,key,data_map):
 
 def createParticipantsSidecar(name):
     participants_sidecar = ParticipantsSidecar({
-            "participant_id": {
-                "Description": "Unique participant identifier",
-                "Units": "string"
-            },
-            "species": {
-                "Description": "Species of the participant",
-                "Units": "Homo sapiens"
-            },
-            "population": {
-                "Description": "Adult or pediatric",
+        "participant_id": {
+            "Description": "Unique participant identifier"
+        },
+        "species": {
+            "Description": "Species of the participant",
+            "Levels": {
+                "homo sapiens": "Human"
+            }
+        },
+        "population": {
+            "Description": "Adult or pediatric population classification",
+            "Levels": {
+                "adult": "adult",
+                "pediatric": "pediatric"
+            }
+        },
+        "sex": {
+            "Description": "Biological sex of the subject, collected from health record",
+            "Levels": {
+                "Female": "Female",
+                "Male": "Male"
+            }
+        },
+        "MRI_lesion": {
+            "Description": "Preimplant MRI lesion status",
+            "Levels": {
+                "lesional": "lesional",
+                "nonlesional": "nonlesional",
+                "n/a": "not available"
+            }
+        },
+        "MRI_lesionType": {
+            "Description": "Type of MRI lesion",
+            "Levels": {
+                "Encephalocele": "Encephalocele",
+                "FCD": "Focal Cortical Dysplasia",
+                "MTS": "Medial Temporal Sclerosis",
+                "Multiple": "see MRI_lesionDetails for description",
+                "Prior surgery": "prior resection",
+                "PVNH": "periventricular nodular heterotopia",
+                "Tubers": "Tubers",
+                "n/a": "nonlesional",
+                "Other": "see MRI_lesionDetails for description"
+            }
+        },
+        "MRI_lesionDetails": {
+            "Description": "Type of MRI lesion, specified",
+            "Units": "string"
+        },
+        "ieeg_isFocal": {
+            "Description": "Postimplant determination of seizure onset focality",
+            "Levels": {
+                "focal": "focal",
+                "nonfocal": "nonfocal"
+            }
+        },
+        "intervention_type": {
+            "Description": "Postimplant intervention, associated data in postsurgery session if applicable",
+            "Levels": {
+            "ablation": "laser ablation",
+            "DBS": "Deep brain stimulation device",
+            "medication": "medication management, no surgical intervention post iEEG implant",
+            "resection": "resection",
+            "RNS": "Responsive neurostimulation (NeuroPace RNS System)",
+            "VNS": "Vagal nerve stimulator device"
+            }
+        },
+        "intervention_side": {
+            "Description": "Hemisphere of surgical intervention",
+            "Levels": {
+                "Bilateral": "Bilateral",
+                "Left": "Left",
+                "Right": "Right",
+                "n/a": "no surgical intervention"
+            }
+        },
+        "intervention_location": {
+            "Description": "Brain region of surgical intervention",
+            "Units": "string"
+        },
+        "seizure_Engel12m": {
+            "Description": "Engel outcome classification 12 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
+            "Reference": "Wieser HG et al., Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
+            "Units": "number class",
+            "Levels": {
+                "n/a": "no surgical intervention or unknown"
+            }
+        },
+        "seizure_Engel24m": {
+                "Description": "Engel outcome classification 24 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
+                "Reference": "Wieser HG et al., Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
+                "Units": "number class",
                 "Levels": {
-                "A": "adult",
-                "P": "pediatric"
-                }
-            },
-            "sex": {
-                "Description": "Biological sex of the participant",
-                "Levels": {
-                "M": "male",
-                "F": "female"
-                }
-            },
-            })
+                "n/a": "not available or not applicable (absence of surgical intervention post-implant)"
+            }
+        },
+        "fiveSenseScore": {
+            "Description": "5-SENSE Score",
+            "Reference": "Astner-Rohracher A et al., JAMA Neurol. 2022 Jan 1;79(1):70-79. doi:10.1001/jamaneurol.2021.4405. PMID:34870697; PMCID:PMC8649918.",
+            "Units": "number index",
+            "Levels": {
+                "n/a": "no surgical intervention or not available"
+            }
+        }
+    })
 
     participants_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
@@ -479,7 +560,7 @@ def main():
         pkg_data = get_dataset_packages(ds_id)
 
 
-        ceateDatasetDescription(name) # TODO: Missing description and name for GeneratedBy key from JB
+        ceateDatasetDescription(name)
         createParticipantsSidecar(name) # TODO: Needs to be replaced. JB to send
         createParticipantsTSVSidecar(name,original_name,migration_subject_map)  # TODO: Confirm values. Linked with above
         createSessionsDataSidecar(name,original_name,migration_subject_map) # TODO: JB to send new CSV

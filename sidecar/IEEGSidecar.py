@@ -13,7 +13,7 @@ class IeegSidecar(JSONSidecar):
     - Warns on missing recommended or unknown extra fields
     """
 
-    filename = "ieeg.json"
+    filename = "ieegx.json"
     bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {

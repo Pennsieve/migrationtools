@@ -14,6 +14,7 @@ def get_ref_gnd_map(csv_path):
                     row.get("iEEGReference", "").strip() or "unknown",
                     row.get("iEEGGround", "").strip() or "unknown",
                 )
+
     return mapping
 
 def main():
@@ -185,17 +186,18 @@ def main():
                 if not parent_key:
                     continue
 
+                # TODOD: Check on ieeg ground and reference
                 payload[dataset_name][parent_key]["row_data"] = rows
 
-                top_folder = make_output_name(dataset_name) # e.g. EPS004
-                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids" / parent_key # EPS004/D01
+                top_folder = make_output_name(dataset_name) # e.g. PennEPI
+                full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key # PennEPI/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
-                output_path = full_output_path / "channels.tsv"
+                output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"
                 # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [
-                    "counter", "name", "type", "units", "low_cutoff", "high_cutoff",
+                    "name", "type", "units", "low_cutoff", "high_cutoff",
                     "reference", "ground", "group", "sampling_frequency", "notch"
                 ]
                 with open(output_path, "w", newline="") as f:
@@ -208,14 +210,14 @@ def main():
                 payload[dataset_name]["row_data"] = rows
 
                 top_folder = make_output_name(dataset_name) # e.g. EPS005
-                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids" # EPS005/
+                full_output_path = Path(OUTPUT_DIR) / top_folder # EPS005/
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
-                output_path = full_output_path / "channels.tsv"
+                output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"
                 # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [
-                    "counter", "name", "type", "units", "low_cutoff", "high_cutoff",
+                    "name", "type", "units", "low_cutoff", "high_cutoff",
                     "reference", "ground", "group", "sampling_frequency", "notch"
                 ]
                 with open(output_path, "w", newline="") as f:

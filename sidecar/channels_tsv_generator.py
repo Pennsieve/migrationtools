@@ -97,7 +97,7 @@ def main():
                 electrode_data = load_data(f"electrode_data_{dataset_name}")
 
                 if electrode_data is None:
-                    print("Fetching electrode data from network...")
+                    print("Fetching electrode csv data from network...")
                     electrode_data = get_electrode_data(node_id)
                     save_data(electrode_data, f"electrode_data_{dataset_name}")
 
@@ -107,9 +107,10 @@ def main():
                 electrode_data = load_data(f"electrode_txt_data_{dataset_name}")
 
                 if electrode_data is None:
-                    print("Fetching electrode data from network...")
+                    print("Fetching electrode txt data from network...")
                     electrode_data = get_electrode_data(node_id)
-                    save_data(electrode_data, f"electrode_txt_data_{dataset_name}") 
+                    parsed_data = parse_electrode_txt(electrode_data)
+                    save_data(parsed_data, f"electrode_txt_data_{dataset_name}") 
                 
 
         rows = []
@@ -140,7 +141,10 @@ def main():
                 reference = "unknown"
                 ground = "unknown"
             else:
-                reference, ground = master_map.get(dataset_name, ("unknown", "unknown"))
+                master_map_key = dataset_name
+                if dataset_name == "PennEPI00049":
+                    master_map_key = "EPS0000049"
+                reference, ground = master_map.get(master_map_key, ("unknown", "unknown"))
 
             group = sanitize_group_name(base_name)[:2]
             if group.lower() in ["ek","ec"]:

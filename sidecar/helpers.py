@@ -251,3 +251,43 @@ def read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
                 continue  # skip rows with no EPS Number
             data[eps.strip()] = {k: v for k, v in row.items() if k != "EPS Number"}
     return data
+
+def parse_electrode_txt(data):
+    def parse_line(line):
+        parts = line.split("\t")
+        if len(parts) < 6:
+            return None
+        return {
+            "label": parts[0],
+            "x": float(parts[1]),
+            "y": float(parts[2]),
+            "z": float(parts[3]),
+            "type": parts[4],
+            "group": parts[5]
+        }
+
+    parsed = []
+
+    if isinstance(data, str):
+        lines = data.strip().splitlines()
+        for line in lines:
+            item = parse_line(line)
+            if item:
+                parsed.append(item)
+
+    elif isinstance(data, list):
+        for entry in data:
+            if isinstance(entry, dict):
+                for k, v in entry.items():
+                    for line in (k, v):
+                        item = parse_line(line)
+                        if item:
+                            parsed.append(item)
+            elif isinstance(entry, str):
+                item = parse_line(entry)
+                if item:
+                    parsed.append(item)
+
+    # Convert list → dict keyed by label
+    result = {item["label"]: {k: v for k, v in item.items() if k != "label"} for item in parsed}
+    return result

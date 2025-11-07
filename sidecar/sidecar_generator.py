@@ -14,7 +14,7 @@ from typing import Dict, Any
 
 MASTER_MIGRATION_METADATA = "input/mastermigration_metadata.csv"
 MASTER_SUBJECT_METADATA = "input/mastersubject_metadata.csv"
-PREFIX = "PENNEPI"
+PREFIX = "PennEPI"
 
 data_map = {}
 
@@ -72,13 +72,19 @@ def createElectrodesSidecar(name):
 
     electrodes_payload = []
     electrode_data = load_data(f"electrode_data_{name}")
+    electrode_text = load_data(f"electrode_txt_data_{name}")
+    
 
     if electrode_data != None:
         for data in electrode_data:
-            name = data.get("labels","")
+            label = data.get("labels","")
+            # FROM: Files/derivatives/voxtool_ct/electodes.txt. use last two columns, reversed. ie: 10 1 -> 1x10
+            raw_dimensions = electrode_text[label]["group"]
+            dimensions = raw_dimensions.split(" ")
+            dimension = f"{dimensions[1]}x{dimensions[0]}"
 
             electrodes_payload.append({
-                "name": name,
+                "name": label,
                 "x": data.get("mm_x",""),
                 "y": data.get("mm_y",""),
                 "z": data.get("mm_z",""),
@@ -87,10 +93,9 @@ def createElectrodesSidecar(name):
                 "group": name[:2].upper(),
                 "hemisphere": name[0].upper(),
                 "type": ELECTRODES_GROUP,
-                "dimension": "mm", # FROM: Files/derivatives/voxtool_ct/electodes.txt. use last two columns, reversed. ie: 10 1 -> 1x10
+                "dimension": dimension,
                 "roi": data.get("roi",""),
             })
-
         sidecar = ElectrodesSidecar()
         sidecar.save(data=electrodes_payload, output_dir=f"output/{name}/bids")
 
@@ -104,8 +109,8 @@ def createCoordsSidecar(name):
             "iEEGCoordinateProcessingReference": "Lucas A, Scheid BH, Pattnaik AR, Gallagher R, Mojena M, Tranquille A, Prager B, Gleichgerrcht E, Gong R, Litt B, Davis KA, Das S, Stein JM, Sinha N. iEEG-recon: A fast and scalable pipeline for accurate reconstruction of intracranial electrodes and implantable devices. Epilepsia. 2024 Mar;65(3):817-829. doi: 10.1111/epi.17863. Epub 2024 Jan 10. PMID: 38148517; PMCID: PMC10948311.",
         }
 
-    sidecar = CoordSystemSidecar(coord_fields)
-    sidecar.save(output_dir=f"output/{name}/bids", json_indent=4, filename=f"PREFIX_space-{coord_fields["iEEGCoordinateSystem"]}_coordsystem.json")
+    sidecar = CoordSystemSidecar(coord_fields,filename=f"PREFIX_space-{coord_fields["iEEGCoordinateSystem"]}_coordsystem.json")
+    sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
 def createChannelsDataSidecar(name,data_map):
     channels_data = [
@@ -152,7 +157,6 @@ def createChannelsDataSidecar(name,data_map):
 
 def createIEEGDataSidecar(name,key,data_map):
 
-    # TODO: naming scheme sub-PennEPI00049-postimplant_ieeg.json
     def save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data,path):
 
         ieeg_data = {
@@ -174,6 +178,7 @@ def createIEEGDataSidecar(name,key,data_map):
             "ECGChannelCount": channel_counts["ECGChannelCount"],  # ok
             "EMGChannelCount": channel_counts["EMGChannelCount"],  # ok
             "MiscChannelCount": channel_counts["MiscChannelCount"],  # ok
+            "TriggerChannelCount": channel_counts["TriggerChannelCount"],  # TODO: COnfirm
             "RecordingDuration": recording_duration, # ok
             "RecordingType": RECORDING_TYPE, # ok
             "HardwareFilters":{
@@ -216,6 +221,7 @@ def createIEEGDataSidecar(name,key,data_map):
             "ECGChannelCount": 0,
             "EMGChannelCount": 0,
             "MiscChannelCount": 0,
+            "TriggerChannelCount": 0,
         }
         try:
             with open(path) as f:
@@ -233,6 +239,8 @@ def createIEEGDataSidecar(name,key,data_map):
                         counts["ECGChannelCount"] +=1
                     elif line["type"].lower().strip() == "emg":
                         counts["EMGChannelCount"] +=1
+                    elif line["type"].lower().strip() == "trigger": # TODO: Confirm
+                        counts["TriggerChannelCount"] +=1
                     else:
                         counts["MiscChannelCount"] +=1
         except FileNotFoundError:
@@ -563,11 +571,11 @@ def main():
 
 
         ceateDatasetDescription(name)
-        createParticipantsSidecar(name) # TODO: Needs to be replaced. JB to send
-        createParticipantsTSVSidecar(name,original_name,migration_subject_map)  # TODO: Confirm values. Linked with above
+        createParticipantsSidecar(name)
+        createParticipantsTSVSidecar(name,original_name,migration_subject_map)
         createSessionsDataSidecar(name,original_name,migration_subject_map) # TODO: JB to send new CSV
         createIEEGDataSidecar(name,original_name,migration_hardware_data_map) # TODO: Needs to be dataset specific
-        createCoordsSidecar(name) # TODO: Needs PREFIX
+        createCoordsSidecar(name)
         createElectrodesSidecar(name)
 
 def rename(name):

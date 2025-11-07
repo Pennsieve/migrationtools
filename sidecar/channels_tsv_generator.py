@@ -131,10 +131,11 @@ def main():
             is_ekg = "ekg" in base_name.lower()
 
             # Fill columns
+            cutoff = 4000
             type_ = "ECG" if is_ekg else "SEEG"
             units = "uV"
-            low_cutoff = "n/a"
-            high_cutoff = "0.01" if not is_ekg else "n/a"
+            low_cutoff = cutoff
+            high_cutoff = "0.01" if not is_ekg else cutoff
             notch = "n/a"
 
             if is_ekg:
@@ -197,7 +198,7 @@ def main():
                 full_output_path = Path(OUTPUT_DIR) / top_folder / "bids"/ parent_key # PennEPI/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
-                output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"
+                output_path = full_output_path / f"sub-{top_folder}_ses-postimplant_task-clinical_channels.tsv"
                 # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [
@@ -217,7 +218,7 @@ def main():
                 full_output_path = Path(OUTPUT_DIR) / top_folder/"bids" # EPS005/
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
-                output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"
+                output_path = full_output_path / f"sub-{top_folder}_ses-postimplant_task-clinical_channels.tsv"
                 # print(f"Writing {len(rows)} rows → {output_path}")
 
                 fieldnames = [

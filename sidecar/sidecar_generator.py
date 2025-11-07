@@ -68,17 +68,14 @@ def createEEGSidecar(name,data_map):
     eeg_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
 def createElectrodesSidecar(name):
-    # source:  Files/derivatives/ieeg_recon/module4/electrodes2ROI_mni.csv
 
     electrodes_payload = []
     electrode_data = load_data(f"electrode_data_{name}")
     electrode_text = load_data(f"electrode_txt_data_{name}")
-    
 
     if electrode_data != None:
         for data in electrode_data:
             label = data.get("labels","")
-            # FROM: Files/derivatives/voxtool_ct/electodes.txt. use last two columns, reversed. ie: 10 1 -> 1x10
             raw_dimensions = electrode_text[label]["group"]
             dimensions = raw_dimensions.split(" ")
             dimension = f"{dimensions[1]}x{dimensions[0]}"
@@ -90,8 +87,8 @@ def createElectrodesSidecar(name):
                 "z": data.get("mm_z",""),
                 "size": ELECTRODES_SIZE,
                 "manufacturer": ELECTRODES_MANUFACTURER,
-                "group": name[:2].upper(),
-                "hemisphere": name[0].upper(),
+                "group": label[:2].upper(),
+                "hemisphere": label[0].upper(),
                 "type": ELECTRODES_GROUP,
                 "dimension": dimension,
                 "roi": data.get("roi",""),
@@ -109,7 +106,7 @@ def createCoordsSidecar(name):
             "iEEGCoordinateProcessingReference": "Lucas A, Scheid BH, Pattnaik AR, Gallagher R, Mojena M, Tranquille A, Prager B, Gleichgerrcht E, Gong R, Litt B, Davis KA, Das S, Stein JM, Sinha N. iEEG-recon: A fast and scalable pipeline for accurate reconstruction of intracranial electrodes and implantable devices. Epilepsia. 2024 Mar;65(3):817-829. doi: 10.1111/epi.17863. Epub 2024 Jan 10. PMID: 38148517; PMCID: PMC10948311.",
         }
 
-    sidecar = CoordSystemSidecar(coord_fields,filename=f"PREFIX_space-{coord_fields["iEEGCoordinateSystem"]}_coordsystem.json")
+    sidecar = CoordSystemSidecar(coord_fields,filename=f"sub-{name}_ses-postimplant_space-{coord_fields["iEEGCoordinateSystem"]}_coordsystem.json")
     sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
 
 def createChannelsDataSidecar(name,data_map):
@@ -189,7 +186,7 @@ def createIEEGDataSidecar(name,key,data_map):
             }
         }
 
-        sidecar = IeegSidecar(ieeg_data, filename=f"sub-{key}-postimplant_ieeg.json")
+        sidecar = IeegSidecar(ieeg_data, filename=f"sub-{name}_ses-postimplant_task-clinical_ieeg.json")
         sidecar.save(output_dir=path)
 
     def get_sampling_frequency(path):
@@ -301,7 +298,7 @@ def createSessionsDataSidecar(name,key,data_map):
             #     "subject_age_session": subject_age_session_postsurgery_preimplant_eeg,
             # },
         ]
-    session_sidecar = SessionSidecar(filename=f"sub-{key}_sessions.tsv")
+    session_sidecar = SessionSidecar(filename=f"sub-{name}_sessions.tsv")
 
     session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/bids")
 
@@ -317,6 +314,7 @@ def createParticipantsTSVSidecar(name,key,data_map):
                 "population": POPULATION,
                 "sex": sex, 
                 "MRI_lesion":"",
+                "MRI_lesionType": "",
                 'MRI_lesionDetails':"",
                 "ieeg_isFocal": "",
                 "intervention_type": "",
@@ -327,7 +325,7 @@ def createParticipantsTSVSidecar(name,key,data_map):
             },
 
         ]
-    pariticpant_sidecar = ParticipantsSideCarTSV(filename=f"sub-{name}_participants.json")
+    pariticpant_sidecar = ParticipantsSideCarTSV(filename=f"participants.tsv")
     pariticpant_sidecar.save(data=pariticpant_data, output_dir=f"output/{name}/bids")
 
 def createParticipantsSidecar(name):
@@ -430,7 +428,7 @@ def createParticipantsSidecar(name):
         },
         "fiveSenseScore": {
             "Description": "5-SENSE Score",
-            "Reference": "Astner-Rohracher A, Zimmermann G, Avigdor T, Abdallah C, Barot N, Brázdil M, Doležalová I, Gotman J, Hall JA, Ikeda K, Kahane P, Kalss G, Kokkinos V, Leitinger M, Mindruta I, Minotti L, Mizera MM, Oane I, Richardson M, Schuele SU, Trinka E, Urban A, Whatley B, Dubeau F, Frauscher B. Development and Validation of the 5-SENSE Score to Predict Focality of the Seizure-Onset Zone as Assessed by Stereoelectroencephalography. JAMA Neurol. 2022 Jan 1;79(1):70-79. doi: 10.1001/jamaneurol.2021.4405. PMID: 34870697; PMCID: PMC8649918.",
+            "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
             "Units": "number index",
             "Levels": {
                 "n/a": "no surgical intervention or not available"
@@ -498,14 +496,6 @@ def ceateDatasetDescription(name):
                 "University of Pennsylvania Human Research Protections Program, Institutional Review Boards (Protocol 703979, 811097, and/or 821778)"
             ],
             "ReferencesAndLinks": "",
-            "GeneratedBy": [
-                {
-                    "Name": "iEEG-BIDS Migration Tool",
-                    "Version": "1.0.0",
-                    "Description": "https://github.com/Pennsieve/migrationtools",
-                }
-            ]
-            ,
             "Keywords": ["epilepsy", "intracranial", "human", "adult", "epilepsy.science"]
         })
 
@@ -552,8 +542,6 @@ def main():
     migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 
-    
-
     for ds in datasets:
         original_name = ds["content"]["name"]
         ds_id = ds["content"]["id"]
@@ -567,14 +555,12 @@ def main():
 
         name = rename(original_name)
         print(f"\nProcessing dataset: {name}")
-        pkg_data = get_dataset_packages(ds_id)
-
 
         ceateDatasetDescription(name)
         createParticipantsSidecar(name)
         createParticipantsTSVSidecar(name,original_name,migration_subject_map)
-        createSessionsDataSidecar(name,original_name,migration_subject_map) # TODO: JB to send new CSV
-        createIEEGDataSidecar(name,original_name,migration_hardware_data_map) # TODO: Needs to be dataset specific
+        createSessionsDataSidecar(name,original_name,migration_subject_map)
+        createIEEGDataSidecar(name,original_name,migration_hardware_data_map)
         createCoordsSidecar(name)
         createElectrodesSidecar(name)
 

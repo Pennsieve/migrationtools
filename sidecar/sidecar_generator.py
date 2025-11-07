@@ -313,6 +313,14 @@ def createParticipantsTSVSidecar(name,key,data_map):
                 "species": SPECIES,
                 "population": POPULATION,
                 "sex": sex, 
+                "MRI_lesion":"",
+                'MRI_lesionDetails':"",
+                "ieeg_isFocal": "",
+                "intervention_type": "",
+                "intervention_location":"",
+                "seizure_Engel12m":"",
+                "seizure_Engel24m":"",
+                "fiveSenseScore":"",
             },
 
         ]

@@ -194,7 +194,7 @@ def main():
                 payload[dataset_name][parent_key]["row_data"] = rows
 
                 top_folder = make_output_name(dataset_name) # e.g. PennEPI
-                full_output_path = Path(OUTPUT_DIR) / top_folder / parent_key # PennEPI/D01
+                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids"/ parent_key # PennEPI/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"
@@ -214,7 +214,7 @@ def main():
                 payload[dataset_name]["row_data"] = rows
 
                 top_folder = make_output_name(dataset_name) # e.g. EPS005
-                full_output_path = Path(OUTPUT_DIR) / top_folder # EPS005/
+                full_output_path = Path(OUTPUT_DIR) / top_folder/"bids" # EPS005/
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / f"sub-{top_folder}-postimplant_channels.tsv"

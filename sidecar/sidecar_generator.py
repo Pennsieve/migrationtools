@@ -327,7 +327,7 @@ def createParticipantsTSVSidecar(name,key,data_map):
             },
 
         ]
-    pariticpant_sidecar = SessionSidecar()
+    pariticpant_sidecar = ParticipantsSideCarTSV(filename=f"sub-{name}_participants.json")
     pariticpant_sidecar.save(data=pariticpant_data, output_dir=f"output/{name}/bids")
 
 def createParticipantsSidecar(name):
@@ -414,7 +414,7 @@ def createParticipantsSidecar(name):
         },
         "seizure_Engel12m": {
             "Description": "Engel outcome classification 12 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
-            "Reference": "Wieser HG et al., Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
+            "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
             "Units": "number class",
             "Levels": {
                 "n/a": "no surgical intervention or unknown"
@@ -422,7 +422,7 @@ def createParticipantsSidecar(name):
         },
         "seizure_Engel24m": {
                 "Description": "Engel outcome classification 24 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
-                "Reference": "Wieser HG et al., Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
+                "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
                 "Units": "number class",
                 "Levels": {
                 "n/a": "not available or not applicable (absence of surgical intervention post-implant)"
@@ -430,7 +430,7 @@ def createParticipantsSidecar(name):
         },
         "fiveSenseScore": {
             "Description": "5-SENSE Score",
-            "Reference": "Astner-Rohracher A et al., JAMA Neurol. 2022 Jan 1;79(1):70-79. doi:10.1001/jamaneurol.2021.4405. PMID:34870697; PMCID:PMC8649918.",
+            "Reference": "Astner-Rohracher A, Zimmermann G, Avigdor T, Abdallah C, Barot N, Brázdil M, Doležalová I, Gotman J, Hall JA, Ikeda K, Kahane P, Kalss G, Kokkinos V, Leitinger M, Mindruta I, Minotti L, Mizera MM, Oane I, Richardson M, Schuele SU, Trinka E, Urban A, Whatley B, Dubeau F, Frauscher B. Development and Validation of the 5-SENSE Score to Predict Focality of the Seizure-Onset Zone as Assessed by Stereoelectroencephalography. JAMA Neurol. 2022 Jan 1;79(1):70-79. doi: 10.1001/jamaneurol.2021.4405. PMID: 34870697; PMCID: PMC8649918.",
             "Units": "number index",
             "Levels": {
                 "n/a": "no surgical intervention or not available"

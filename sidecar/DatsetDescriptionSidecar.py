@@ -40,9 +40,13 @@ class DatasetDescriptionSidecar(JSONSidecar):
         "Funding": [],
         "EthicsApprovals": [],
         "ReferencesAndLinks": [],
-        "DatasetDOI": "doi:10.xxxxx/placeholder",
-        "GeneratedBy": [{"Name": "Sidecar Generator", "Version": "1.0.0"}],
-        "Description": "Dataset automatically generated from provided metadata.",
+            "GeneratedBy": [{
+                "Name": "iEEG-BIDS Migration Tool",
+                "Version": "1.0.0",
+                "CodeURL": "https://github.com/Pennsieve/migrationtools",
+                "Description": "Dataset automatically generated from provided metadata.",
+            }]
+        
     }
 
     SCHEMA = {

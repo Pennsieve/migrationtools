@@ -36,10 +36,6 @@ class ParticipantsSidecar(JSONSidecar):
             "Description": "Species of the participant",
             "Units": "Homo sapiens",
         },
-        "age": {
-            "Description": "Age of the participant at the time of testing",
-            "Units": "years",
-        },
         "population": {
             "Description": "Adult or pediatric",
             "Levels": {
@@ -53,14 +49,7 @@ class ParticipantsSidecar(JSONSidecar):
                 "M": "male",
                 "F": "female"
             },
-        },
-        "handedness": {
-            "Description": "Handedness of the participant",
-            "Levels": {
-                "L": "left",
-                "R": "right"
-            },
-        },
+        }
     }
 
     # Basic JSON Schema for structure validation

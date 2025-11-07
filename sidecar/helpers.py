@@ -291,3 +291,27 @@ def parse_electrode_txt(data):
     # Convert list → dict keyed by label
     result = {item["label"]: {k: v for k, v in item.items() if k != "label"} for item in parsed}
     return result
+
+def generate_new_name(old_name: str) -> str:
+    """
+    Generate a new PennEPI dataset name from an old EPS-style name.
+    
+    Examples:
+        EPS0000215  → PennEPI00215
+        EPS00049    → PennEPI00049
+        eps15       → PennEPI00015
+        EPS_00123   → PennEPI00123
+    """
+    old_name = old_name.strip()
+
+    # Normalize case and remove underscores/spaces just in case
+    match = re.match(r"(?i)^EPS[_\s]*(\d+)$", old_name)
+    if not match:
+        # Not an EPS-prefixed name — return unchanged
+        return old_name
+
+    # Extract numeric portion and normalize to 5 digits
+    numeric_part = match.group(1).lstrip("0") or "0"
+    new_suffix = numeric_part.zfill(5)
+
+    return f"PennEPI{new_suffix}"

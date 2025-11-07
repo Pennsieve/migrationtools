@@ -264,17 +264,12 @@ def createIEEGDataSidecar(name,key,data_map):
         save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)   
 
 def createSessionsDataSidecar(name,key,data_map):
-    # TODO: Change name pattern to  sub-{PennEPIXXXXX}_sessions.tsv
-    try:
-        subject_age_session_postimplant = data_map[key].get("age_iEEGimplant","n/a")
-        subject_age_session_postsurgery = data_map[key].get("age_procedure","n/a")
-        subject_age_session_postsurgery_preimplant_anat = data_map[key].get("age_t3scan","n/a")
-        subject_age_session_postsurgery_preimplant_eeg = data_map[key].get("age_preeeg","n/a")
-    except KeyError as e:
-        subject_age_session_postimplant = "n/a"
-        subject_age_session_postsurgery = "n/a"
-        subject_age_session_postsurgery_preimplant_anat = "n/a"
-        subject_age_session_postsurgery_preimplant_eeg = "n/a"
+    
+    subject = data_map.get(key, {})
+    subject_age_session_postimplant = subject.get("age_iEEGimplant","n/a")
+    subject_age_session_postsurgery = subject.get("age_procedure","n/a")
+    subject_age_session_postsurgery_preimplant_anat = subject.get("age_t3scan","n/a")
+    subject_age_session_postsurgery_preimplant_eeg = subject.get("age_preeeg","n/a")
 
     sessions_data = [
             {
@@ -546,7 +541,6 @@ def main():
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
 
-    data_map = merge_csvs_by_eps(MASTER_MIGRATION_METADATA,MASTER_SUBJECT_METADATA)
     migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 

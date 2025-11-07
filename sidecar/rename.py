@@ -11,8 +11,8 @@ from helpers import get_all_datasets, get_dataset_packages, generate_new_name, A
 PENNSIEVE_API_BASE = "https://api.pennsieve.io"
 HEADERS = {"accept": "*/*", "content-type": "application/json"}
 
-DRY_RUN = False  # True = print actions only, no PUT requests
-TARGET_DATASETS = ["EPS0000777"]  # ["*"] for all, [] for none
+DRY_RUN = True  # True = print actions only, no PUT requests
+TARGET_DATASETS = []  # ["*"] for all, [] for none
 
 
 def rename_dataset(dataset_id: str, new_name: str) -> bool:

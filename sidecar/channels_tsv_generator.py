@@ -131,11 +131,10 @@ def main():
             is_ekg = "ekg" in base_name.lower()
 
             # Fill columns
-            cutoff = 4000
             type_ = "ECG" if is_ekg else "SEEG"
             units = "uV"
-            low_cutoff = cutoff
-            high_cutoff = "0.01" if not is_ekg else cutoff
+            low_cutoff = "n/a"
+            high_cutoff = "0.01" if not is_ekg else "n/a"
             notch = "n/a"
 
             if is_ekg:

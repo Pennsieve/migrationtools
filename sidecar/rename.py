@@ -15,10 +15,10 @@ DRY_RUN = True  # True = print actions only, no PUT requests
 TARGET_DATASETS = []  # ["*"] for all, [] for none
 
 
-def rename_dataset(dataset_id: str, new_name: str) -> bool:
+def rename_dataset(dataset_id: str,dataset_name: str, new_name: str) -> bool:
     """Rename a dataset by ID on Pennsieve."""
     if DRY_RUN:
-        print(f"[DRY-RUN] Would rename dataset ID {dataset_id} → '{new_name}'")
+        print(f"[DRY-RUN] Would rename dataset ID {dataset_id} {dataset_name} → '{new_name}'")
         return True
 
     if not API_KEY:
@@ -40,10 +40,10 @@ def rename_dataset(dataset_id: str, new_name: str) -> bool:
         return False
 
 
-def rename_package(package_id: str, new_name: str) -> bool:
+def rename_package(package_id: str,old_name:str, new_name: str) -> bool:
     """Rename a package by ID on Pennsieve."""
     if DRY_RUN:
-        print(f"[DRY-RUN] Would rename package ID {package_id} → '{new_name}'")
+        print(f"[DRY-RUN] Would rename package ID {package_id} {old_name} → '{new_name}'")
         return True
 
     if not API_KEY:
@@ -66,12 +66,27 @@ def rename_package(package_id: str, new_name: str) -> bool:
 
 
 def should_process(dataset_name: str) -> bool:
-    """Decide if this dataset should be processed based on TARGET_DATASETS."""
+    """
+    Decide if this dataset should be processed.
+    
+    SAFETY: Only datasets starting with 'EPS' can be processed,
+    even if explicitly listed in TARGET_DATASETS.
+    """
+    if not dataset_name:
+        return False
+    
+    # Hard safety requirement: ONLY EPS datasets
+    if not dataset_name.upper().startswith("EPS"):
+        return False
+    
     if not TARGET_DATASETS:
         return False
+    
     if TARGET_DATASETS == ["*"]:
         return True
-    return dataset_name in TARGET_DATASETS
+    
+    # Case-insensitive matching for flexibility
+    return dataset_name.upper() in [t.upper() for t in TARGET_DATASETS]
 
 
 def process_datasets():
@@ -98,7 +113,7 @@ def process_datasets():
             continue
 
         # Rename dataset
-        if rename_dataset(dataset_id, new_name):
+        if rename_dataset(dataset_id,dataset_name, new_name):
             # Rename corresponding package
             packages = get_dataset_packages(dataset_id)
             for pkg in packages:
@@ -109,7 +124,7 @@ def process_datasets():
 
                 expected_pkg_name = f"sub-{dataset_name}".lower()
                 if pkg_name.lower() == expected_pkg_name and pkg_type == "collection":
-                    rename_package(package_id, f"sub-{new_name}")
+                    rename_package(package_id,pkg_name, f"sub-{new_name}")
 
     print("\n✅ Completed dataset processing.")
     if DRY_RUN:

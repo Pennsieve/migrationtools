@@ -40,6 +40,10 @@ OUTPUT_DIR = "output"
 PAGE_SIZE = 25
 CACHE_DIR = "cache"
 
+MASTER_MIGRATION_METADATA = "input/mastermigration_metadata.csv"
+MASTER_SUBJECT_METADATA = "input/mastersubject_metadata.csv"
+PREFIX = "PennEPI"
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 

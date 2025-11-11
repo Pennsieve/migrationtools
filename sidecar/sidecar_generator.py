@@ -13,9 +13,7 @@ from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
-MASTER_MIGRATION_METADATA = "input/mastermigration_metadata.csv"
-MASTER_SUBJECT_METADATA = "input/mastersubject_metadata.csv"
-PREFIX = "PennEPI"
+
 
 data_map = {}
 
@@ -166,7 +164,7 @@ def createIEEGDataSidecar(name,key,data_map):
             "ElectrodeManufacturer":data.get("ElectrodeManufacturer","n/a"),
             "iEEGReference": data.get("iEEGReference","n/a"), # ok
             "iEEGGround": data.get("iEEGGround","n/a"), # ok
-            "SamplingFrequency": sampling_frquency, #ok
+            "SamplingFrequency": sampling_frquency, # TODO: Not being pulled 
             "PowerLineFrequency": POWER_LINE_FREQUENCY, # ok
             "SoftwareFilters": SOFTWARE_FILTERS,  # ok
             "ECOGChannelCount": channel_counts["ECOGChannelCount"],  # ok
@@ -176,13 +174,13 @@ def createIEEGDataSidecar(name,key,data_map):
             "ECGChannelCount": channel_counts["ECGChannelCount"],  # ok
             "EMGChannelCount": channel_counts["EMGChannelCount"],  # ok
             "MiscChannelCount": channel_counts["MiscChannelCount"],  # ok
-            "TriggerChannelCount": channel_counts["TriggerChannelCount"],  # TODO: COnfirm
-            "RecordingDuration": recording_duration, # ok
+            "TriggerChannelCount": channel_counts["TriggerChannelCount"],  # TODO: Confirm
+            "RecordingDuration": recording_duration, # TODO: Not being pulled
             "RecordingType": RECORDING_TYPE, # ok
             "HardwareFilters":{
                 "Hardware bandwidth filter":{
-                    "min (Hz)": data.get("hardwarebandwith_in","n/a"),
-                    "max (Hz)": data.get("hardwarebandwith_max","n/a"),
+                    "min (Hz)": "0.01",
+                    "max (Hz)": "4000",
                 }
             }
         }
@@ -237,7 +235,7 @@ def createIEEGDataSidecar(name,key,data_map):
                         counts["ECGChannelCount"] +=1
                     elif line["type"].lower().strip() == "emg":
                         counts["EMGChannelCount"] +=1
-                    elif line["type"].lower().strip() == "trigger": # TODO: Confirm
+                    elif line["type"].lower().strip() == "trig":
                         counts["TriggerChannelCount"] +=1
                     else:
                         counts["MiscChannelCount"] +=1

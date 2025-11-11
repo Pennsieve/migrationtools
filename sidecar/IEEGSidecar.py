@@ -72,10 +72,7 @@ class IeegSidecar(JSONSidecar):
         "Manufacturer": "Natus",
         "ManufacturersModelName": "Quantum",
         "InstitutionName": "Penn Medicine",
-        "InstitutionAddress": "",
-        "InstitutionalDepartmentName": "",
         "ElectrodeManufacturer": "AD-TECH",
-        "ElectrodeManufacturersModelName": "",
     }
 
     SCHEMA = {

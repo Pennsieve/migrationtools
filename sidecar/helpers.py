@@ -38,8 +38,10 @@ BASE_URL = "https://api.pennsieve.io"
 MASTER_CSV_PATH = "input/mastermigration_metadata.csv"
 OUTPUT_DIR = "output"
 PAGE_SIZE = 25
-IEEG_JSON_PATH = "output/bids"
 CACHE_DIR = "cache"
+
+os.makedirs(CACHE_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 def get_all_datasets():
     """Paginate through all datasets from Pennsieve API."""
@@ -156,7 +158,7 @@ def get_electrode_data(node_id: str):
 
     return rows
 
-def make_output_name(dataset_name: str) -> str:
+def eps_to_penn_epi(dataset_name: str) -> str:
     """
     Convert dataset name like 'EPS00049' → 'PENNEPI00049'.
     Handles any EPS prefix with variable zeros.
@@ -164,6 +166,15 @@ def make_output_name(dataset_name: str) -> str:
     match = re.search(r"(\d+)", dataset_name)
     num = match.group(1) if match else "00000"
     return f"PennEPI{int(num):05d}"
+
+def penn_epi_to_eps(dataset_name: str) -> str:
+    """
+    Convert dataset name like 'PennEPI00049' → 'EPS0000049'.
+    Extracts numeric portion and formats with 7-digit zero padding.
+    """
+    match = re.search(r"(\d+)", dataset_name)
+    num = match.group(1) if match else "0000000"
+    return f"EPS{int(num):07d}"
 
 def clean_basename(pkg_name: str) -> str:
     name = pkg_name.lower().removesuffix(".mef")

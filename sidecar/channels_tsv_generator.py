@@ -17,7 +17,7 @@ def get_ref_gnd_map(csv_path):
 
     return mapping
 
-def main():
+def make_channels():
     keys_to_check = ["D01", "D02", "D03", "D04", "D05", "D06", "D07"]
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -141,9 +141,7 @@ def main():
                 reference = "unknown"
                 ground = "unknown"
             else:
-                master_map_key = dataset_name
-                if dataset_name == "PennEPI00049":
-                    master_map_key = "EPS0000049"
+                master_map_key = penn_epi_to_eps(dataset_name)
                 reference, ground = master_map.get(master_map_key, ("unknown", "unknown"))
 
             group = sanitize_group_name(base_name)[:2]
@@ -193,8 +191,8 @@ def main():
                 # TODOD: Check on ieeg ground and reference
                 payload[dataset_name][parent_key]["row_data"] = rows
 
-                top_folder = make_output_name(dataset_name) # e.g. PennEPI
-                full_output_path = Path(OUTPUT_DIR) / top_folder / "bids"/ parent_key # PennEPI/D01
+                top_folder = eps_to_penn_epi(dataset_name) # e.g. PennEPI
+                full_output_path = Path(OUTPUT_DIR) / top_folder / f"sub-{top_folder}/ses-postimplant/ieeg"/ parent_key # PennEPI/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / f"sub-{top_folder}_ses-postimplant_task-clinical_channels.tsv"
@@ -213,8 +211,8 @@ def main():
                 # single-dataset case (no D0X keys)
                 payload[dataset_name]["row_data"] = rows
 
-                top_folder = make_output_name(dataset_name) # e.g. EPS005
-                full_output_path = Path(OUTPUT_DIR) / top_folder/"bids" # EPS005/
+                top_folder = eps_to_penn_epi(dataset_name) # e.g. EPS005
+                full_output_path = Path(OUTPUT_DIR) / top_folder/ f"primary/sub-{top_folder}/ses-postimplant/ieeg" # EPS005/...
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / f"sub-{top_folder}_ses-postimplant_task-clinical_channels.tsv"
@@ -265,5 +263,3 @@ def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_refere
     
 
 
-if __name__ == "__main__":
-    main()

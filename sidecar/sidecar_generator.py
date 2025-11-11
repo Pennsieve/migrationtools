@@ -9,6 +9,7 @@ from ElectrodesSidecar import ElectrodesSidecar
 from EEGSidecar import EEGSidecar
 from EventsSidecar import EventsSidecar
 from helpers import *
+from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
@@ -93,8 +94,8 @@ def createElectrodesSidecar(name):
                 "dimension": dimension,
                 "roi": data.get("roi",""),
             })
-        sidecar = ElectrodesSidecar()
-        sidecar.save(data=electrodes_payload, output_dir=f"output/{name}/bids")
+        sidecar = ElectrodesSidecar(filename=f"sub-{name}_ses-postimplant_space-MNI152NLin6ASym_electrodes.tsv")
+        sidecar.save(data=electrodes_payload, output_dir=f"output/{name}/primary/sub-{name}/ses-postimplant/ieeg")
 
 def createCoordsSidecar(name):
     coord_fields = {
@@ -107,7 +108,7 @@ def createCoordsSidecar(name):
         }
 
     sidecar = CoordSystemSidecar(coord_fields,filename=f"sub-{name}_ses-postimplant_space-{coord_fields["iEEGCoordinateSystem"]}_coordsystem.json")
-    sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
+    sidecar.save(output_dir=f"output/{name}/primary/sub-{name}/ses-postimplant/ieeg", json_indent=4)
 
 def createChannelsDataSidecar(name,data_map):
     channels_data = [
@@ -253,7 +254,7 @@ def createIEEGDataSidecar(name,key,data_map):
             if not sub_key.startswith("D0"):
                 continue
 
-            path = f"{OUTPUT_DIR}/{name}/bids/{sub_key}"
+            path = f"{OUTPUT_DIR}/{name}/{sub_key}/sub-{name}/ses-postimplant/ieeg"
             channels_path = os.path.join(OUTPUT_DIR, name,"bids",sub_key, "channels.tsv")
             sampling_frquency = get_sampling_frequency(channels_path)
             recording_duration = get_recording_duration(key,sub_key)
@@ -261,7 +262,7 @@ def createIEEGDataSidecar(name,key,data_map):
 
             save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
     else:
-        path = f"{OUTPUT_DIR}/{name}/bids"
+        path = f"{OUTPUT_DIR}/{name}/primary/sub-{name}/ses-postimplant/ieeg"
         channels_path = os.path.join(OUTPUT_DIR, name, "bids", "channels.tsv")
         sampling_frquency = get_sampling_frequency(channels_path)
         recording_duration = get_recording_duration(key)
@@ -300,7 +301,7 @@ def createSessionsDataSidecar(name,key,data_map):
         ]
     session_sidecar = SessionSidecar(filename=f"sub-{name}_sessions.tsv")
 
-    session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/bids")
+    session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/primary/sub-{name}")
 
 def createParticipantsTSVSidecar(name,key,data_map):
     try:
@@ -326,7 +327,7 @@ def createParticipantsTSVSidecar(name,key,data_map):
 
         ]
     pariticpant_sidecar = ParticipantsSideCarTSV(filename=f"participants.tsv")
-    pariticpant_sidecar.save(data=pariticpant_data, output_dir=f"output/{name}/bids")
+    pariticpant_sidecar.save(data=pariticpant_data, output_dir=f"output/{name}")
 
 def createParticipantsSidecar(name):
     participants_sidecar = ParticipantsSidecar({
@@ -436,7 +437,7 @@ def createParticipantsSidecar(name):
         }
     })
 
-    participants_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
+    participants_sidecar.save(output_dir=f"output/{name}", json_indent=4)
 
 def ceateDatasetDescription(name):
     dd_sidecar = DatasetDescriptionSidecar({
@@ -499,7 +500,7 @@ def ceateDatasetDescription(name):
             "Keywords": ["epilepsy", "intracranial", "human", "adult", "epilepsy.science"]
         })
 
-    dd_sidecar.save(output_dir=f"output/{name}/bids", json_indent=4)
+    dd_sidecar.save(output_dir=f"output/{name}", json_indent=4)
 
 def merge_csvs_by_eps(csv_path_1: str, csv_path_2: str) -> Dict[str, Dict[str, Any]]:
     """
@@ -535,6 +536,11 @@ def merge_csvs_by_eps(csv_path_1: str, csv_path_2: str) -> Dict[str, Dict[str, A
 
 def main():
 
+    
+    if not os.path.exists("cache"):
+        print("Fetching channels")
+        make_channels()
+
     print("Fetching all datasets...")
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
@@ -544,25 +550,24 @@ def main():
 
     for ds in datasets:
         original_name = ds["content"]["name"]
-        ds_id = ds["content"]["id"]
 
-        # if not original_name.startswith("PennEPI"):
-        if not original_name.startswith("EPS") and not original_name.startswith("PennEPI"):
+        if not original_name.startswith("PennEPI"):
             continue
 
-        if original_name == "PennEPI00049":
-            original_name = "EPS0000049"
+        penn_epi_name = original_name
+        eps_name = penn_epi_to_eps(original_name)
+        
+        
+        # name = rename(original_name)
+        print(f"\nProcessing dataset: {penn_epi_name}")
 
-        name = rename(original_name)
-        print(f"\nProcessing dataset: {name}")
-
-        ceateDatasetDescription(name)
-        createParticipantsSidecar(name)
-        createParticipantsTSVSidecar(name,original_name,migration_subject_map)
-        createSessionsDataSidecar(name,original_name,migration_subject_map)
-        createIEEGDataSidecar(name,original_name,migration_hardware_data_map)
-        createCoordsSidecar(name)
-        createElectrodesSidecar(name)
+        ceateDatasetDescription(penn_epi_name)
+        createParticipantsSidecar(penn_epi_name)
+        createParticipantsTSVSidecar(penn_epi_name,eps_name,migration_subject_map)
+        createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
+        createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
+        createCoordsSidecar(penn_epi_name)
+        createElectrodesSidecar(penn_epi_name)
 
 def rename(name):
     digits = ''.join(c for c in name if c.isdigit())

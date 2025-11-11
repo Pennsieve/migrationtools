@@ -448,6 +448,12 @@ class PennsieveDatasetManager:
         """Process a single dataset with all operations"""
         dataset_id = dataset['content']['id']
         dataset_name = dataset['content']['name']
+        if dataset_name in ["PenEPI00001","PennEPI00002","PenEPI00003","PenEPI00004","PenEPI00005","PenEPI00006",
+                            "PenEPI00001","PennEPI00008","PennEPI00009","PennEPI00010","PennEPI00011","PennEPI00012",
+                            "PennEPI00049"
+                            ]:
+            logger.info(f"Skipping dataset {dataset_name} as per exclusion list")
+            return True
         
         logger.info(f"\n{'='*60}")
         logger.info(f"Processing dataset: {dataset_name} ({dataset_id})")

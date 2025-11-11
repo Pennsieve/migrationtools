@@ -94,6 +94,9 @@ def createElectrodesSidecar(name):
             })
         sidecar = ElectrodesSidecar(filename=f"sub-{name}_ses-postimplant_space-MNI152NLin6ASym_electrodes.tsv")
         sidecar.save(data=electrodes_payload, output_dir=f"output/{name}/primary/sub-{name}/ses-postimplant/ieeg")
+        return True
+    else:
+        return False
 
 def createCoordsSidecar(name):
     coord_fields = {
@@ -199,12 +202,13 @@ def createIEEGDataSidecar(name,key,data_map):
             return "n/a"
         
     def get_recording_duration(key, sub_key=None):
+        eps_key = eps_to_penn_epi(key)
         payload = load_data("payload")
         try:
             if sub_key == None:
-                return payload[key]["duration"]
+                return payload[eps_key]["duration"]
             else:
-                return payload[key][sub_key]["duration"]
+                return payload[eps_key][sub_key]["duration"]
         except KeyError as e:
             return -1
         
@@ -253,7 +257,7 @@ def createIEEGDataSidecar(name,key,data_map):
                 continue
 
             path = f"{OUTPUT_DIR}/{name}/{sub_key}/sub-{name}/ses-postimplant/ieeg"
-            channels_path = os.path.join(OUTPUT_DIR, name,"bids",sub_key, "channels.tsv")
+            channels_path = os.path.join(OUTPUT_DIR, name, sub_key, "primary", f"sub-{name}", "ses-postimplant", "ieeg", f"sub-{name}_ses-postimplant_task-clinical_channels.tsv")
             sampling_frquency = get_sampling_frequency(channels_path)
             recording_duration = get_recording_duration(key,sub_key)
             channel_counts = get_channel_counts(channels_path)
@@ -261,7 +265,7 @@ def createIEEGDataSidecar(name,key,data_map):
             save_ieeg_sidecar(name, sampling_frquency, recording_duration, channel_counts, data_map.get(key),path)
     else:
         path = f"{OUTPUT_DIR}/{name}/primary/sub-{name}/ses-postimplant/ieeg"
-        channels_path = os.path.join(OUTPUT_DIR, name, "bids", "channels.tsv")
+        channels_path = os.path.join(OUTPUT_DIR, name,"primary",f"sub-{name}", "ses-postimplant", "ieeg", f"sub-{name}_ses-postimplant_task-clinical_channels.tsv")
         sampling_frquency = get_sampling_frequency(channels_path)
         recording_duration = get_recording_duration(key)
         channel_counts = get_channel_counts(channels_path)
@@ -283,8 +287,8 @@ def createSessionsDataSidecar(name,key,data_map):
             },
             {
                 "session_id": "ses-postsurgery",
-                "session_description": "post surgical treatment follow up, no sooner than 15months",
-                "subject_age_session": subject_age_session_postsurgery,
+                "session_description": "post-surgical treatment followup scan",
+                "subject_age_session": "n/a",
             },
             {
                 "session_id": "ses-preimplant/anat",
@@ -376,7 +380,6 @@ def createParticipantsSidecar(name):
         },
         "MRI_lesionDetails": {
             "Description": "Type of MRI lesion, specified",
-            "Units": "string"
         },
         "ieeg_isFocal": {
             "Description": "Postimplant determination of seizure onset focality",
@@ -384,6 +387,10 @@ def createParticipantsSidecar(name):
                 "focal": "focal",
                 "nonfocal": "nonfocal"
             }
+        },
+        "age_intervention":{
+            "Description": "Age of subject at postimplant surgical intervention",
+            "Units": "years"
         },
         "intervention_type": {
             "Description": "Postimplant intervention, associated data in postsurgery session if applicable",
@@ -407,31 +414,21 @@ def createParticipantsSidecar(name):
         },
         "intervention_location": {
             "Description": "Brain region of surgical intervention",
-            "Units": "string"
         },
         "seizure_Engel12m": {
             "Description": "Engel outcome classification 12 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
             "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
             "Units": "number class",
-            "Levels": {
-                "n/a": "no surgical intervention or unknown"
-            }
         },
         "seizure_Engel24m": {
-                "Description": "Engel outcome classification 24 months post-surgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
+                "Description": "Engel outcome classification 24 months postsurgical intervention; integer represents roman numeral classes and .1 = A, .2 = B, .3 = C, .4 = D",
                 "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
                 "Units": "number class",
-                "Levels": {
-                "n/a": "not available or not applicable (absence of surgical intervention post-implant)"
-            }
         },
         "fiveSenseScore": {
             "Description": "5-SENSE Score",
-            "Reference": "Wieser HG, Blume WT, Fish D, Goldensohn E, Hufnagel A, King D, Sperling MR, Lüders H, Pedley TA; Commission on Neurosurgery of the International League Against Epilepsy (ILAE). ILAE Commission Report. Proposal for a new classification of outcome with respect to epileptic seizures following epilepsy surgery. Epilepsia. 2001 Feb;42(2):282-6. PMID: 11240604.",
+            "Reference": "Astner-Rohracher A, Zimmermann G, Avigdor T, Abdallah C, Barot N, Brázdil M, Doležalová I, Gotman J, Hall JA, Ikeda K, Kahane P, Kalss G, Kokkinos V, Leitinger M, Mindruta I, Minotti L, Mizera MM, Oane I, Richardson M, Schuele SU, Trinka E, Urban A, Whatley B, Dubeau F, Frauscher B. Development and Validation of the 5-SENSE Score to Predict Focality of the Seizure-Onset Zone as Assessed by Stereoelectroencephalography. JAMA Neurol. 2022 Jan 1;79(1):70-79. doi: 10.1001/jamaneurol.2021.4405. PMID: 34870697; PMCID: PMC8649918.",
             "Units": "number index",
-            "Levels": {
-                "n/a": "no surgical intervention or not available"
-            }
         }
     })
 
@@ -564,8 +561,10 @@ def main():
         createParticipantsTSVSidecar(penn_epi_name,eps_name,migration_subject_map)
         createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
         createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
-        createCoordsSidecar(penn_epi_name)
-        createElectrodesSidecar(penn_epi_name)
+        created_electrodes = createElectrodesSidecar(penn_epi_name)
+        if created_electrodes:
+            createCoordsSidecar(penn_epi_name)
+        
 
 def rename(name):
     digits = ''.join(c for c in name if c.isdigit())

@@ -256,7 +256,7 @@ def createIEEGDataSidecar(name,key,data_map):
             if not sub_key.startswith("D0"):
                 continue
 
-            path = f"{OUTPUT_DIR}/{name}/{sub_key}/sub-{name}/ses-postimplant/ieeg"
+            path = f"{OUTPUT_DIR}/{name}/primary/{sub_key}/sub-{name}/ses-postimplant/ieeg"
             channels_path = os.path.join(OUTPUT_DIR, name, sub_key, "primary", f"sub-{name}", "ses-postimplant", "ieeg", f"sub-{name}_ses-postimplant_task-clinical_channels.tsv")
             sampling_frquency = get_sampling_frequency(channels_path)
             recording_duration = get_recording_duration(key,sub_key)

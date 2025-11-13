@@ -192,7 +192,7 @@ def make_channels():
                 payload[dataset_name][parent_key]["row_data"] = rows
 
                 top_folder = eps_to_penn_epi(dataset_name) # e.g. PennEPI
-                full_output_path = Path(OUTPUT_DIR) / top_folder / f"sub-{top_folder}/ses-postimplant/ieeg"/ parent_key # PennEPI/D01
+                full_output_path = Path(OUTPUT_DIR) / top_folder / f"primary/sub-{top_folder}/ses-postimplant/ieeg"/ parent_key # PennEPI/D01
                 full_output_path.mkdir(parents=True, exist_ok=True)
 
                 output_path = full_output_path / f"sub-{top_folder}_ses-postimplant_task-clinical_channels.tsv"

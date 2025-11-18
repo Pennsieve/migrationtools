@@ -6,3 +6,10 @@ ieeg_sidescar_file_output/
 __pycache__/
 *.pyc
 cache/
+*.zip
+*.xlsx
+*.csv
+*.tsv
+*.txt
+*.json
+*.log

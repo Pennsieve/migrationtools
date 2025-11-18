@@ -11,7 +11,7 @@ import requests
 from pathlib import Path
 from typing import Dict, Any
 from urllib.parse import quote
-
+from typing import Literal, Optional
 
 INPUT_FILE_PATH = "input/mastermigration_metadata.csv"
 
@@ -46,6 +46,56 @@ PREFIX = "PennEPI"
 
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+CHANNEL_CONFIGS = {
+    "ECG": {
+        "names": ["EKG", "EKG1", "EKG2", "ECG", "ECG1", "ECG2"],
+        "type": "ECG",
+        "group": "n/a",
+    },
+    "EEG": {
+        "names": ["C3", "C03", "C4", "C04", "CZ", "F3", "F4", "F7", "F8", 
+                  "FP1", "FP2", "FZ", "O1", "O2", "P3", "P4", "PZ", 
+                  "T3", "T4", "T5", "T6"],
+        "type": "EEG",
+        "group_strategy": "use_name",  # group = channel name
+    },
+    "EOG": {
+        "names": ["LOC", "ROC"],
+        "type": "EOG",
+        "group_strategy": "use_name",
+    },
+    "EMG": {
+        "names": ["EMG", "EMG1", "EMG2"],
+        "type": "EMG",
+        "group_strategy": "use_name",
+    },
+}
+
+# Build reverse lookup once at module load
+CHANNEL_LOOKUP = {}
+for config_name, config in CHANNEL_CONFIGS.items():
+    for channel_name in config["names"]:
+        CHANNEL_LOOKUP[channel_name] = {
+            "type": config["type"],
+            "group": channel_name if config.get("group_strategy") == "use_name" 
+                     else config.get("group", "n/a")
+        }
+
+def get_channel_info(channel_name: str) -> dict:
+    """Get type and group for a channel name."""
+    # Handle special cases
+    if channel_name.upper() in ["REF", "GND"]:
+        return {"type": "unknown", "group": "unknown"}
+
+    # Check if channel matches known configurations
+    if channel_name in CHANNEL_LOOKUP:
+        return CHANNEL_LOOKUP[channel_name]
+
+    # Default to SEEG with group = first 2 letters of channel name
+    # Extract first 2 letters for group
+    group = channel_name[:2] if len(channel_name) >= 2 else channel_name
+    return {"type": "SEEG", "group": group}
 
 def get_all_datasets():
     """Paginate through all datasets from Pennsieve API."""
@@ -109,12 +159,13 @@ def sanitize_group_name(name: str) -> str:
     return re.sub(r"[^\w]", "", name)
 
 def get_freq_duration(node_id) -> str:
-    url = f"https://api.pennsieve.io/packages/download-manifest?api_key={API_KEY}"
+    url = f"https://api.pennsieve.io/packages/download-manifest"
 
     payload = { "nodeIds": [node_id] }
     headers = {
         "accept": "*/*",
-        "content-type": "application/json"
+        "content-type": "application/json",
+        "Authorization": f"Bearer {API_KEY}"
     }
 
     response = requests.post(url, json=payload, headers=headers)
@@ -125,6 +176,7 @@ def get_freq_duration(node_id) -> str:
 
     response = requests.get(download_url)
     response.raise_for_status()
+    print(node_id)
     ieeg_json =  response.json()
 
     sampling_frequency = ieeg_json.get("SamplingFrequency","n/a")
@@ -180,7 +232,7 @@ def penn_epi_to_eps(dataset_name: str) -> str:
     num = match.group(1) if match else "0000000"
     return f"EPS{int(num):07d}"
 
-def clean_basename(pkg_name: str) -> str:
+def clean_channel_name(pkg_name: str) -> str:
     name = pkg_name.lower().removesuffix(".mef")
     name = re.sub(r"(eeg|-ref)", "", name)
     name = name.translate(str.maketrans("", "", string.punctuation))
@@ -310,7 +362,7 @@ def parse_electrode_txt(data):
 def generate_new_name(old_name: str) -> str:
     """
     Generate a new PennEPI dataset name from an old EPS-style name.
-    
+
     Examples:
         EPS0000215  → PennEPI00215
         EPS00049    → PennEPI00049

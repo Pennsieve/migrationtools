@@ -41,7 +41,11 @@ def make_channels():
     # Loop over all datasets and packages
     for ds in datasets:
         dataset_name = ds["content"]["name"]
+        print(dataset_name)
         ds_id = ds["content"]["id"]
+
+        if dataset_name == "PennEPI00949":
+            continue
         
         if not dataset_name.lower().startswith("eps") and not dataset_name.lower().startswith("pennepi"):
             continue
@@ -57,9 +61,12 @@ def make_channels():
         # Get sampling frequency and duration, per sub dataset
         for pkg in packages:
             pkg_content = pkg.get("content", {})
+
             if pkg_content.get("state") == "DELETED" or pkg_content.get("state") == "DELETING":
                 continue
+
             pkg_name = pkg_content.get("name", "")
+
             ieeg_json = pkg_name.lower().strip().endswith("implant_ieeg.json")
             is_electrodes_csv = pkg_name.lower().strip() == "electrodes2roi_mni.csv"
             is_electrodes_txt = pkg_name.lower().strip() == "electodes.txt"
@@ -73,6 +80,7 @@ def make_channels():
                 ieeg_json_data = load_data(f"ieeg_json_data_{node_id}")
                 if ieeg_json_data is None:
                     print("Fetching all packages from network...")
+                    print(pkg_content.get("name"))
                     ieeg_json_data = get_freq_duration(node_id)
                     save_data(ieeg_json_data,f"ieeg_json_data_{node_id}")
 
@@ -126,12 +134,14 @@ def make_channels():
             if not mef or pkg_content.get("state") == "DELETED" or pkg_content.get("state") == "DELETING":
                 continue
 
-            base_name = clean_basename(pkg_name)
+            channel_name = clean_channel_name(pkg_name)
+
+            channel_info = get_channel_info(channel_name)
             
-            is_ekg = "ekg" in base_name.lower()
+            is_ekg = "ekg" in channel_name.lower()
 
             # Fill columns
-            type_ = "ECG" if is_ekg else "SEEG"
+            channel_type = "ECG" if is_ekg else "SEEG"
             units = "uV"
             low_cutoff = "n/a"
             high_cutoff = "0.01" if not is_ekg else "n/a"
@@ -144,21 +154,21 @@ def make_channels():
                 master_map_key = penn_epi_to_eps(dataset_name)
                 reference, ground = master_map.get(master_map_key, ("unknown", "unknown"))
 
-            group = sanitize_group_name(base_name)[:2]
+            group = sanitize_group_name(channel_name)[:2]
             if group.lower() in ["ek","ec"]:
                 group = "n/a"
 
             parent_id = parent_id = pkg_content.get("parentId")
 
             row ={
-                "name": base_name,
-                "type": type_,
+                "name": channel_name,
+                "type": channel_info["type"],
                 "units": units,
                 "low_cutoff": low_cutoff,
                 "high_cutoff": high_cutoff,
                 "reference": reference,
                 "ground": ground,
-                "group": group,
+                "group": channel_info["group"],
                 "sampling_frequency": sampling_freq,
                 "notch": notch,
             }
@@ -260,6 +270,8 @@ def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_refere
                     "sampling_frequency": None,
                     "duration": None,
                 })
-    
 
+
+if __name__ == "__main__":
+    make_channels()
 

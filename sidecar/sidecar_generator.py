@@ -247,8 +247,6 @@ def createIEEGDataSidecar(name,key,data_map):
             return counts
 
         return counts
-    
-
 
     # detect if this EPS has subdatasets (D01, D02, ...)
     if any(k.startswith("D0") for k in data_map.get(key).keys()):
@@ -316,15 +314,15 @@ def createParticipantsTSVSidecar(name,key,data_map):
                 "species": SPECIES,
                 "population": POPULATION,
                 "sex": sex, 
-                "MRI_lesion":"",
-                "MRI_lesionType": "",
-                'MRI_lesionDetails':"",
-                "ieeg_isFocal": "",
-                "intervention_type": "",
-                "intervention_location":"",
-                "seizure_Engel12m":"",
-                "seizure_Engel24m":"",
-                "fiveSenseScore":"",
+                "MRI_lesion":data_map[key].get("mri_lesion","n/a"),
+                "MRI_lesionType": data_map[key].get("mri_lesionType","n/a"),
+                'MRI_lesionDetails':data_map[key].get("mri_lesionDetails","n/a"),
+                "ieeg_isFocal": data_map[key].get("ieeg_isFocal","n/a"),
+                "intervention_type": data_map[key].get("intervention_type","n/a"),
+                "intervention_location":data_map[key].get("intervention_location","n/a"),
+                "seizure_Engel12m":data_map[key].get("seizure_Engel12m","n/a"),
+                "seizure_Engel24m":data_map[key].get("seizure_Engel24m","n/a"),
+                "fiveSenseScore":data_map[key].get("fiveSenseScore","n/a"),
             },
 
         ]
@@ -545,16 +543,17 @@ def main():
 
     for ds in datasets:
         original_name = ds["content"]["name"]
+        
 
         if not original_name.startswith("PennEPI"):
             continue
 
         penn_epi_name = original_name
-        eps_name = penn_epi_to_eps(original_name)
-        
-        
-        # name = rename(original_name)
         print(f"\nProcessing dataset: {penn_epi_name}")
+        if penn_epi_name not in ["PennEPI00102", "PennEPI00098", "PennEPI00093", "PennEPI00090", "PennEPI00082", "PennEPI00087", "PennEPI00138", "PennEPI00091", "PennEPI00096", "PennEPI00137", "PennEPI00095", "PennEPI00088", "PennEPI00086", "PennEPI00099", "PennEPI00083",]:
+            print(f"Skipping dataset: {penn_epi_name}")
+            continue
+        eps_name = penn_epi_to_eps(original_name)
 
         ceateDatasetDescription(penn_epi_name)
         createParticipantsSidecar(penn_epi_name)
@@ -562,6 +561,8 @@ def main():
         createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
         createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
         created_electrodes = createElectrodesSidecar(penn_epi_name)
+        if penn_epi_name in ["PennEPI00102", "PennEPI00098", "PennEPI00093", "PennEPI00090", "PennEPI00082", "PennEPI00087", "PennEPI00138", "PennEPI00091", "PennEPI00096", "PennEPI00137", "PennEPI00095", "PennEPI00088", "PennEPI00086", "PennEPI00099", "PennEPI00083"]:
+            print(f"{penn_epi_name} Was electrodes created: {created_electrodes}")
         if created_electrodes:
             createCoordsSidecar(penn_epi_name)
         

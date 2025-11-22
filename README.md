@@ -1,20 +1,3 @@
-# Create a new environment for this project
-```bash
-conda create -n eeg_uploader python=3.11
-```
-
-# Activate it
-```bash
-conda activate eeg_uploader
-```
-
-# Install jsonschema and any other dependencies
-```bash
-conda install jsonschema
-pip install -r requirements.txt
-```
-
-
 
 # EEG File Reorganizer
 

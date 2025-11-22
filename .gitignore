@@ -5,5 +5,7 @@
 input/
 output/
 logs/
+__pycache__/
+legacy_codes/
 
 

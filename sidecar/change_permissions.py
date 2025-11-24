@@ -113,5 +113,105 @@ def process_datasets():
         print("💡 (Dry-run mode: no actual changes were made.)")
 
 
+def add_team_collaborators_to_datasets(dry_run: bool = True):
+    """
+    Add team collaborators to PennEPI datasets.
+
+    Only processes datasets with names starting with "PennEPI".
+
+    Args:
+        dry_run: If True, only prints what would be done without making changes.
+                 If False, actually makes the API calls.
+
+    Returns:
+        Dictionary with results of the operation including successes and failures.
+    """
+    TEAM_ID = "N:team:0db9a013-a9b9-4740-9332-eb56c374f057"
+    TEAM_ROLE = "manager"
+
+    print(f"{'[DRY RUN] ' if dry_run else ''}Fetching all datasets...")
+    datasets = get_all_datasets()
+
+    # Filter to only PennEPI datasets
+    pennepi_datasets = [ds for ds in datasets if ds.get("content", {}).get("name", "").startswith("PennEPI")]
+
+    print(f"Found {len(pennepi_datasets)} PennEPI datasets out of {len(datasets)} total datasets\n")
+
+    results = {
+        "processed": [],
+        "skipped": [],
+        "errors": []
+    }
+
+    for dataset in pennepi_datasets:
+        dataset_name = dataset.get("content", {}).get("name", "Unknown")
+        dataset_node_id = dataset.get("content", {}).get("id") or dataset.get("content", {}).get("intId")
+
+        if not dataset_node_id:
+            print(f"⚠️  Skipping {dataset_name}: No node ID found")
+            results["skipped"].append({
+                "name": dataset_name,
+                "reason": "No node ID found"
+            })
+            continue
+
+        if dry_run:
+            print(f"[DRY RUN] Would add team {TEAM_ID} as {TEAM_ROLE} to dataset: {dataset_name} (ID: {dataset_node_id})")
+            results["processed"].append({
+                "name": dataset_name,
+                "node_id": dataset_node_id,
+                "status": "dry_run"
+            })
+        else:
+            try:
+                url = f"{PENNSIEVE_API_BASE}/datasets/{dataset_node_id}/collaborators/teams"
+                headers = {
+                    "accept": "*/*",
+                    "content-type": "application/json"
+                }
+                payload = {
+                    "id": TEAM_ID,
+                    "role": TEAM_ROLE
+                }
+
+                response = requests.put(
+                    f"{url}?api_key={API_KEY}",
+                    json=payload,
+                    headers=headers
+                )
+                if response.status_code in [200, 201, 204]:
+                    print(f"✅ Successfully added team to: {dataset_name}")
+                    results["processed"].append({
+                        "name": dataset_name,
+                        "node_id": dataset_node_id,
+                        "status": "success"
+                    })
+                else:
+                    print(f"❌ Failed to add team to {dataset_name}: {response.status_code} - {response.text}")
+                    results["errors"].append({
+                        "name": dataset_name,
+                        "node_id": dataset_node_id,
+                        "status_code": response.status_code,
+                        "error": response.text
+                    })
+
+            except Exception as e:
+                print(f"❌ Error processing {dataset_name}: {str(e)}")
+                results["errors"].append({
+                    "name": dataset_name,
+                    "node_id": dataset_node_id,
+                    "error": str(e)
+                })
+
+    # Print summary
+    print(f"\n{'='*60}")
+    print(f"{'[DRY RUN] ' if dry_run else ''}Summary:")
+    print(f"  Processed: {len(results['processed'])}")
+    print(f"  Skipped: {len(results['skipped'])}")
+    print(f"  Errors: {len(results['errors'])}")
+    print(f"{'='*60}")
+
+    return results
+
 if __name__ == "__main__":
     process_datasets()

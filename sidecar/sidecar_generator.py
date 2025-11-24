@@ -318,6 +318,7 @@ def createParticipantsTSVSidecar(name,key,data_map):
                 "MRI_lesionType": data_map[key].get("mri_lesionType","n/a"),
                 'MRI_lesionDetails':data_map[key].get("mri_lesionDetails","n/a"),
                 "ieeg_isFocal": data_map[key].get("ieeg_isFocal","n/a"),
+                "age_intervention": data_map[key].get("age_intervention","n/a"),
                 "intervention_type": data_map[key].get("intervention_type","n/a"),
                 "intervention_location":data_map[key].get("intervention_location","n/a"),
                 "seizure_Engel12m":data_map[key].get("seizure_Engel12m","n/a"),

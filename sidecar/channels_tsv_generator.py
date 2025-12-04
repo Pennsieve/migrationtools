@@ -1,5 +1,5 @@
 from helpers import *
-import os, csv
+import os, csv, argparse
 from pathlib import Path
 
 def get_ref_gnd_map(csv_path):
@@ -17,12 +17,12 @@ def get_ref_gnd_map(csv_path):
 
     return mapping
 
-def make_channels():
+def make_channels(force_reload: bool = False):
     keys_to_check = ["D01", "D02", "D03", "D04", "D05", "D06", "D07"]
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     print("Fetching all datasets...")
-    datasets = load_data("datasets")
+    datasets = load_data("datasets", force_reload=force_reload)
     if datasets is None:
         print("Fetching all packages from network...")
         datasets = get_all_datasets()
@@ -36,7 +36,7 @@ def make_channels():
     parent_id_reference = {}
         
     # Build up parent id reference for later use
-    build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference)    
+    build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference, force_reload=force_reload)    
 
     # Loop over all datasets and packages
     for ds in datasets:
@@ -50,7 +50,7 @@ def make_channels():
         if not dataset_name.lower().startswith("eps") and not dataset_name.lower().startswith("pennepi"):
             continue
 
-        packages = load_data(f"package_{dataset_name}")
+        packages = load_data(f"package_{dataset_name}", force_reload=force_reload)
         if packages is None:
             print("Fetching all packages from network...")
             packages = get_dataset_packages(ds_id)
@@ -69,15 +69,15 @@ def make_channels():
 
             ieeg_json = pkg_name.lower().strip().endswith("implant_ieeg.json")
             is_electrodes_csv = pkg_name.lower().strip() == "electrodes2roi_mni.csv"
-            is_electrodes_txt = pkg_name.lower().strip() == "electodes.txt"
+            is_electrodes_txt = pkg_name.lower().strip() == "electrodes.txt"
             
             if not ieeg_json and not is_electrodes_csv and not is_electrodes_txt:
                 continue    
             
             if ieeg_json:
                 node_id = pkg.get("content").get("nodeId")
-                
-                ieeg_json_data = load_data(f"ieeg_json_data_{node_id}")
+
+                ieeg_json_data = load_data(f"ieeg_json_data_{node_id}", force_reload=force_reload)
                 if ieeg_json_data is None:
                     print("Fetching all packages from network...")
                     print(pkg_content.get("name"))
@@ -102,7 +102,7 @@ def make_channels():
             if is_electrodes_csv:
                 # Save electrode csv data out since we'll need it later
                 node_id = pkg_content.get("nodeId")
-                electrode_data = load_data(f"electrode_data_{dataset_name}")
+                electrode_data = load_data(f"electrode_data_{dataset_name}", force_reload=force_reload)
 
                 if electrode_data is None:
                     print("Fetching electrode csv data from network...")
@@ -110,9 +110,10 @@ def make_channels():
                     save_data(electrode_data, f"electrode_data_{dataset_name}")
 
             if is_electrodes_txt:
+
                 # Save electrode txt data out since we'll need it later
                 node_id = pkg_content.get("nodeId")
-                electrode_data = load_data(f"electrode_txt_data_{dataset_name}")
+                electrode_data = load_data(f"electrode_txt_data_{dataset_name}", force_reload=force_reload)
 
                 if electrode_data is None:
                     print("Fetching electrode txt data from network...")
@@ -241,14 +242,14 @@ def make_channels():
     save_data(payload, f"payload")
     print("\n✅ Done\n")
 
-def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference):
+def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_reference, force_reload: bool = False):
     for ds in datasets:
         dataset_name = ds["content"]["name"]
         ds_id = ds["content"]["id"]
 
         payload[dataset_name] = {}
         parent_id_reference[dataset_name] = {}
-        packages = load_data(f"package_{dataset_name}")
+        packages = load_data(f"package_{dataset_name}", force_reload=force_reload)
         if packages is None:
             print("Fetching all packages from network...")
             packages = get_dataset_packages(ds_id)
@@ -273,5 +274,16 @@ def build_parent_id_ref(datasets, payload, sub_dataset_tracker, parent_id_refere
 
 
 if __name__ == "__main__":
-    make_channels()
+    parser = argparse.ArgumentParser(description='Generate channels TSV files')
+    parser.add_argument(
+        '--force-reload',
+        action='store_true',
+        help='Force reload all data from network, bypassing cache'
+    )
+    args = parser.parse_args()
+
+    if args.force_reload:
+        print("Force reload enabled - all data will be fetched from network")
+
+    make_channels(force_reload=args.force_reload)
 

@@ -26,7 +26,7 @@ MANUFACTURERS_MODEL_NAME = "Quantum"
 
 RECORDING_TYPE = "discontinuous"
 
-SPECIES = "home sapiens"
+SPECIES = "homo sapiens"
 POPULATION = "adult"
 
 ELECTRODES_SIZE = 2.3
@@ -248,12 +248,19 @@ def save_data(data, name: str):
     # print(f"✅ Saved data to {file_path}")
 
 
-def load_data(name: str):
+def load_data(name: str, force_reload: bool = False):
     """
     Load cached data if it exists.
     Returns None if the file does not exist or cannot be read.
     Allows empty lists/dicts as valid cached results.
+
+    Args:
+        name: Cache file name (without .json extension)
+        force_reload: If True, bypass cache and return None to force a fresh fetch
     """
+    if force_reload:
+        return None
+
     file_path = os.path.join(CACHE_DIR, f"{name}.json")
     if not os.path.exists(file_path):
         return None
@@ -313,10 +320,10 @@ def read_csv_to_dict(path: Path) -> Dict[str, Dict[str, Any]]:
     with path.open(newline='', encoding='utf-8-sig') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            eps = row.get("EPS Number")
+            eps = row.get("participant_id")
             if not eps:
                 continue  # skip rows with no EPS Number
-            data[eps.strip()] = {k: v for k, v in row.items() if k != "EPS Number"}
+            data[eps.strip()] = {k: v for k, v in row.items() if k != "participant_id"}
     return data
 
 def parse_electrode_txt(data):

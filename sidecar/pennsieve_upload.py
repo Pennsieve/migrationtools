@@ -69,7 +69,7 @@ def find_dataset_node_id(dataset_name: str) -> Optional[str]:
     returncode, stdout, stderr = run_command(['pennsieve', 'dataset', 'find', dataset_name])
     
     if returncode != 0:
-        logger.error(f"Failed to find dataset {dataset_name}: {stderr}")
+        logger.error(f"Failed to find dataset {dataset_name}: {stderr}, {stdout}")
         return None
     
     # Parse the output to extract the NODE ID
@@ -88,41 +88,52 @@ def find_dataset_node_id(dataset_name: str) -> Optional[str]:
 def set_active_dataset(node_id: str) -> bool:
     """
     Set the active dataset for upload operations.
-    
+
     Args:
         node_id: The dataset node ID
-        
+
     Returns:
         True if successful, False otherwise
     """
     logger.info(f"Setting active dataset: {node_id}")
-    
-    returncode, stdout, stderr = run_command(['pennsieve', 'dataset', node_id, 'use'])
-    
+
+    # Fixed: Command is 'pennsieve dataset use NODE_ID' not 'pennsieve dataset NODE_ID use'
+    returncode, stdout, stderr = run_command(['pennsieve', 'dataset', 'use', node_id])
+
+    logger.debug(f"set_active_dataset stdout: {stdout}")
+    logger.debug(f"set_active_dataset stderr: {stderr}")
+    logger.debug(f"set_active_dataset return code: {returncode}")
+
     if returncode != 0:
         logger.error(f"Failed to set active dataset: {stderr}")
         return False
-    
-    logger.info("Successfully set active dataset")
+
+    # Verify the active dataset was set correctly
+    verify_returncode, verify_stdout, verify_stderr = run_command(['pennsieve', 'dataset'])
+    logger.info(f"Active dataset after setting: {verify_stdout.strip()}")
+
     return True
 
 
-def create_manifest(file_path: Path) -> Optional[int]:
+def create_manifest(file_path: Path, target_path: Optional[str] = None) -> Optional[int]:
     """
     Create a Pennsieve manifest for a file.
-    
+
     Args:
         file_path: Path to the file
-        
+        target_path: Optional target path in the dataset
+
     Returns:
         Manifest ID if successful, None otherwise
     """
     logger.info(f"Creating manifest for: {file_path}")
 
     full_path = Path(file_path).resolve()
-    returncode, stdout, stderr = run_command(
-        ['pennsieve', 'manifest', 'create', str(full_path)]
-    )
+    cmd = ['pennsieve', 'manifest', 'create', str(full_path)]
+    if target_path and target_path != '.':
+        cmd.extend(['-t', target_path])
+
+    returncode, stdout, stderr = run_command(cmd)
     
     if returncode != 0:
         logger.error(f"Failed to create manifest: {stderr}")
@@ -229,14 +240,15 @@ def get_all_files(dataset_dir: Path) -> List[Path]:
     return files
 
 
-def process_dataset(dataset_dir: Path, dry_run: bool = False) -> Optional[bool]:
+def process_dataset(dataset_dir: Path, dry_run: bool = False, file_patterns: Optional[List[str]] = None) -> Optional[bool]:
     """
     Process a single dataset: find node ID, create manifest, add files, upload.
-    
+
     Args:
         dataset_dir: Path to the dataset directory
         dry_run: If True, don't actually upload
-        
+        file_patterns: Optional list of patterns to match in filenames (e.g., ['ses-postimplant', 'electrodes.tsv'])
+
     Returns:
         True if successful, False if failed, None if skipped
     """
@@ -244,13 +256,13 @@ def process_dataset(dataset_dir: Path, dry_run: bool = False) -> Optional[bool]:
     logger.info(f"\n{'='*60}")
     logger.info(f"Processing dataset: {dataset_name}")
     logger.info(f"{'='*60}")
-    
+
     # Step 1: Find the dataset node ID
     node_id = find_dataset_node_id(dataset_name)
     if not node_id:
         logger.warning(f"Dataset not found in Pennsieve, skipping: {dataset_name}")
         return None  # Return None to indicate "skipped" rather than "failed"
-    
+
     # Step 2: Set active dataset
     if not dry_run:
         if not set_active_dataset(node_id):
@@ -258,39 +270,61 @@ def process_dataset(dataset_dir: Path, dry_run: bool = False) -> Optional[bool]:
             return False
     else:
         logger.info(f"[DRY RUN] Would set active dataset: {node_id}")
-    
-    # Step 3: Find dataset_description.json
-    dataset_description = dataset_dir / 'dataset_description.json'
-    if not dataset_description.exists():
-        logger.error(f"dataset_description.json not found in {dataset_dir}")
-        return False
-    
-    # Step 4: Create manifest with dataset_description.json
+
+    # Step 3: Get files to upload
+    all_files = get_all_files(dataset_dir)
+
+    # Apply file pattern filter if specified
+    if file_patterns:
+        files_to_upload = [f for f in all_files if any(p in f.name for p in file_patterns)]
+        logger.info(f"Filtering for patterns: {file_patterns}")
+        logger.info(f"Found {len(files_to_upload)} matching files")
+        for f in files_to_upload:
+            logger.info(f"  - {f.relative_to(dataset_dir)}")
+
+        if not files_to_upload:
+            logger.warning(f"No files matched the patterns in {dataset_name}")
+            return None
+    else:
+        # Original behavior: require dataset_description.json and upload all files
+        dataset_description = dataset_dir / 'dataset_description.json'
+        if not dataset_description.exists():
+            logger.error(f"dataset_description.json not found in {dataset_dir}")
+            return False
+        files_to_upload = all_files
+
+    if not files_to_upload:
+        logger.warning(f"No files to upload for {dataset_name}")
+        return None
+
+    # Step 4: Create manifest with the first file
+    first_file = files_to_upload[0]
+    # Calculate target path relative to dataset dir
+    relative_path = first_file.relative_to(dataset_dir)
+    target_path = str(relative_path.parent) if relative_path.parent != Path('.') else None
+
     if not dry_run:
-        manifest_id = create_manifest(dataset_description)
+        manifest_id = create_manifest(first_file, target_path)
         if manifest_id is None:
             logger.error("Failed to create manifest")
             return False
     else:
         manifest_id = 999  # Dummy ID for dry run
-        logger.info(f"[DRY RUN] Would create manifest with: {dataset_description}")
-    
-    # Step 5: Get all other files
-    all_files = get_all_files(dataset_dir)
-    other_files = [f for f in all_files if f != dataset_description]
-    
-    logger.info(f"Found {len(other_files)} additional files to upload")
-    
-    # Step 6: Add all other files to manifest
-    for file_path in other_files:
+        logger.info(f"[DRY RUN] Would create manifest with: {first_file} (target: {target_path or 'root'})")
+
+    # Step 5: Add remaining files to manifest
+    remaining_files = files_to_upload[1:]
+    logger.info(f"Adding {len(remaining_files)} additional files to manifest")
+
+    for file_path in remaining_files:
         if not dry_run:
             if not add_to_manifest(manifest_id, file_path):
                 logger.error(f"Failed to add file: {file_path}")
                 return False
         else:
             logger.info(f"[DRY RUN] Would add to manifest: {file_path}")
-    
-    # Step 7: Upload the manifest
+
+    # Step 6: Upload the manifest
     if not dry_run:
         logger.info("NOTE: Pennsieve does not overwrite files. If files already exist, duplicates will be created with numbered suffixes.")
         if not upload_manifest(manifest_id):
@@ -299,7 +333,7 @@ def process_dataset(dataset_dir: Path, dry_run: bool = False) -> Optional[bool]:
     else:
         logger.info(f"[DRY RUN] Would upload manifest {manifest_id}")
         logger.info("[DRY RUN] NOTE: Pennsieve does not overwrite existing files - duplicates would be created if files already exist")
-    
+
     logger.info(f"Successfully processed dataset: {dataset_name}")
     return True
 
@@ -312,12 +346,15 @@ def main():
 Examples:
   # Dry run on all datasets
   %(prog)s /path/to/output --datasets "*" --dry-run
-  
+
   # Upload specific datasets
   %(prog)s /path/to/output --datasets PennEPI00001 PennEPI00002
-  
+
   # Upload all datasets (CAREFUL!)
   %(prog)s /path/to/output --datasets "*"
+
+  # Upload only files matching a pattern (preserves directory structure)
+  %(prog)s /path/to/output --datasets PennEPI00001 --pattern ses-postimplant_space-MNI152NLin6ASym
         """
     )
     
@@ -334,6 +371,13 @@ Examples:
         help='Dataset names to process. Use "*" for all, or list specific names'
     )
     
+    parser.add_argument(
+        '--pattern',
+        nargs='+',
+        default=None,
+        help='Only upload files containing any of these patterns in their name (e.g., --pattern ses-postimplant_space-MNI152NLin6ASym electrodes.tsv). Paths are preserved.'
+    )
+
     parser.add_argument(
         '--dry-run',
         action='store_true',
@@ -390,7 +434,7 @@ Examples:
     
     for dataset_dir in dataset_dirs:
         try:
-            result = process_dataset(dataset_dir, dry_run=args.dry_run)
+            result = process_dataset(dataset_dir, dry_run=args.dry_run, file_patterns=args.pattern)
             if result is True:
                 success_count += 1
             elif result is None:

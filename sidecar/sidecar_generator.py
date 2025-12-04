@@ -13,7 +13,7 @@ from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
-
+DATASET_RUN = ["PennEPI00005","PennEPI00021","PennEPI00041","PennEPI00042","PennEPI00044","PennEPI00052","PennEPI00061","PennEPI00211","PennEPI00212"]
 
 data_map = {}
 
@@ -69,8 +69,8 @@ def createEEGSidecar(name,data_map):
 def createElectrodesSidecar(name):
 
     electrodes_payload = []
-    electrode_data = load_data(f"electrode_data_{name}")
-    electrode_text = load_data(f"electrode_txt_data_{name}")
+    electrode_data = load_data(f"electrode_data_{name}", True)
+    electrode_text = load_data(f"electrode_txt_data_{name}",True)
 
     if electrode_data != None:
         for data in electrode_data:
@@ -304,8 +304,9 @@ def createSessionsDataSidecar(name,key,data_map):
     session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/primary/sub-{name}")
 
 def createParticipantsTSVSidecar(name,key,data_map):
+    print(data_map)
     try:
-        sex = data_map[key].get("sex","n/a")
+        sex = data_map[name].get("sex","n/a")
     except KeyError as e:
         sex = "n/a"
     pariticpant_data = [
@@ -314,16 +315,16 @@ def createParticipantsTSVSidecar(name,key,data_map):
                 "species": SPECIES,
                 "population": POPULATION,
                 "sex": sex, 
-                "MRI_lesion":data_map[key].get("mri_lesion","n/a"),
-                "MRI_lesionType": data_map[key].get("mri_lesionType","n/a"),
-                'MRI_lesionDetails':data_map[key].get("mri_lesionDetails","n/a"),
-                "ieeg_isFocal": data_map[key].get("ieeg_isFocal","n/a"),
-                "age_intervention": data_map[key].get("age_intervention","n/a"),
-                "intervention_type": data_map[key].get("intervention_type","n/a"),
-                "intervention_location":data_map[key].get("intervention_location","n/a"),
-                "seizure_Engel12m":data_map[key].get("seizure_Engel12m","n/a"),
-                "seizure_Engel24m":data_map[key].get("seizure_Engel24m","n/a"),
-                "fiveSenseScore":data_map[key].get("fiveSenseScore","n/a"),
+                "MRI_lesion":data_map[name].get("mri_lesion","n/a"),
+                "MRI_lesionType": data_map[name].get("mri_lesionType","n/a"),
+                'MRI_lesionDetails':data_map[name].get("mri_lesionDetails","n/a"),
+                "ieeg_isFocal": data_map[name].get("ieeg_isFocal","n/a"),
+                "age_intervention": data_map[name].get("age_intervention","n/a"),
+                "intervention_type": data_map[name].get("intervention_type","n/a"),
+                "intervention_location":data_map[name].get("intervention_location","n/a"),
+                "seizure_Engel12m":data_map[name].get("seizure_Engel12m","n/a"),
+                "seizure_Engel24m":data_map[name].get("seizure_Engel24m","n/a"),
+                "fiveSenseScore":data_map[name].get("fiveSenseScore","n/a"),
             },
 
         ]
@@ -538,7 +539,7 @@ def main():
     print("Fetching all datasets...")
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
-
+    
     migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 
@@ -551,7 +552,7 @@ def main():
 
         penn_epi_name = original_name
         print(f"\nProcessing dataset: {penn_epi_name}")
-        if penn_epi_name not in ["PennEPI00102", "PennEPI00098", "PennEPI00093", "PennEPI00090", "PennEPI00082", "PennEPI00087", "PennEPI00138", "PennEPI00091", "PennEPI00096", "PennEPI00137", "PennEPI00095", "PennEPI00088", "PennEPI00086", "PennEPI00099", "PennEPI00083",]:
+        if penn_epi_name not in DATASET_RUN:
             print(f"Skipping dataset: {penn_epi_name}")
             continue
         eps_name = penn_epi_to_eps(original_name)
@@ -562,7 +563,7 @@ def main():
         createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
         createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
         created_electrodes = createElectrodesSidecar(penn_epi_name)
-        if penn_epi_name in ["PennEPI00102", "PennEPI00098", "PennEPI00093", "PennEPI00090", "PennEPI00082", "PennEPI00087", "PennEPI00138", "PennEPI00091", "PennEPI00096", "PennEPI00137", "PennEPI00095", "PennEPI00088", "PennEPI00086", "PennEPI00099", "PennEPI00083"]:
+        if penn_epi_name in DATASET_RUN:
             print(f"{penn_epi_name} Was electrodes created: {created_electrodes}")
         if created_electrodes:
             createCoordsSidecar(penn_epi_name)

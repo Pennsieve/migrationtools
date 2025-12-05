@@ -13,8 +13,8 @@ Examples:
     # Dry run: see what *_ieeg.json files would be deleted in specific datasets
     python delete_packages.py --datasets PennEPI00089 PennEPI00090 --file-pattern "*_ieeg.json"
 
-    # Dry run: see what would be deleted across all PennEPI datasets
-    python delete_packages.py --pattern "PennEPI.*" --file-pattern "*_ieeg.json"
+    # Dry run: see what would be deleted across all datasets starting with "PennEPI"
+    python delete_packages.py --prefix "PennEPI" --file-pattern "*_ieeg.json"
 
     # Actually delete (requires --execute flag)
     python delete_packages.py --datasets PennEPI00089 --file-pattern "*_ieeg.json" --execute
@@ -39,8 +39,8 @@ Examples:
   # Dry run (default): list files that would be deleted
   %(prog)s --datasets PennEPI00089 PennEPI00090 --file-pattern "*_ieeg.json"
 
-  # Using regex pattern to match dataset names
-  %(prog)s --pattern "PennEPI000[89][0-9]" --file-pattern "*_ieeg.json"
+  # Using prefix to match all datasets starting with "PennEPI"
+  %(prog)s --prefix PennEPI --file-pattern "*_ieeg.json"
 
   # Actually perform deletion (requires --execute)
   %(prog)s --datasets PennEPI00089 --file-pattern "*_ieeg.json" --execute
@@ -48,8 +48,8 @@ Examples:
   # Match all .tsv files
   %(prog)s --datasets PennEPI00089 --file-pattern "*.tsv"
 
-  # Match specific sidecar files
-  %(prog)s --pattern "PennEPI.*" --file-pattern "*_coordsystem.json"
+  # Match specific sidecar files across all PennEPI datasets
+  %(prog)s --prefix PennEPI --file-pattern "*_coordsystem.json"
         """
     )
 
@@ -62,17 +62,18 @@ Examples:
         help='Explicit list of dataset names to process (e.g., PennEPI00089 PennEPI00090)'
     )
     dataset_group.add_argument(
-        '--pattern',
-        metavar='REGEX',
-        help='Regex pattern to match dataset names (e.g., "PennEPI.*", "PennEPI000[0-9]{2}")'
+        '--prefix',
+        metavar='PREFIX',
+        help='Match datasets whose names start with this prefix (e.g., "PennEPI")'
     )
 
-    # File pattern (required)
+    # File pattern(s) (required)
     parser.add_argument(
         '--file-pattern',
+        nargs='+',
         required=True,
         metavar='GLOB',
-        help='Glob pattern for files to delete (e.g., "*_ieeg.json", "*.tsv")'
+        help='Glob pattern(s) for files to delete (e.g., "*_ieeg.json" "*_clinical.csv")'
     )
 
     # Safety and execution flags
@@ -124,9 +125,9 @@ Examples:
 
     # Run deletion
     datasets_processed, files_deleted, files_failed = manager.delete_packages_by_pattern(
-        dataset_name_filter=args.pattern,
+        dataset_prefix=args.prefix,
         dataset_list=args.datasets,
-        file_pattern=args.file_pattern,
+        file_patterns=args.file_pattern,
         force_reload=args.force_reload
     )
 

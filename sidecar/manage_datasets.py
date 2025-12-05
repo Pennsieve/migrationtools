@@ -438,20 +438,20 @@ class PennsieveDatasetManager:
             return False
 
     def find_packages_by_pattern(self, dataset_id: str, dataset_name: str,
-                                  file_pattern: str, force_reload: bool = False) -> Tuple[List[Dict], Dict[str, str]]:
+                                  file_patterns: List[str], force_reload: bool = False) -> Tuple[List[Dict], Dict[str, str]]:
         """
-        Find packages matching a filename pattern (glob-style).
+        Find packages matching filename pattern(s) (glob-style).
 
         Args:
             dataset_id: The dataset ID
             dataset_name: The dataset name (for caching)
-            file_pattern: Glob pattern to match (e.g., '*_ieeg.json', '*.tsv')
+            file_patterns: List of glob patterns to match (e.g., ['*_ieeg.json', '*_clinical.csv'])
             force_reload: If True, bypass cache and fetch from network
 
         Returns:
             Tuple of (list of matching packages, dict of node_id -> filename)
         """
-        logger.info(f"Finding packages matching '{file_pattern}' in dataset {dataset_name}")
+        logger.info(f"Finding packages matching {file_patterns} in dataset {dataset_name}")
 
         # Get packages (with caching)
         packages = load_data(f"package_{dataset_name}", force_reload=force_reload)
@@ -475,40 +475,43 @@ class PennsieveDatasetManager:
             if name.startswith("__DELETED__"):
                 continue
 
-            # Match against pattern
-            if fnmatch.fnmatch(name, file_pattern):
+            # Match against any of the patterns
+            if any(fnmatch.fnmatch(name, pattern) for pattern in file_patterns):
                 matching.append(pkg)
                 file_info[node_id] = name
                 logger.debug(f"  Matched: {name}")
 
-        logger.info(f"  Found {len(matching)} packages matching '{file_pattern}'")
+        logger.info(f"  Found {len(matching)} packages matching {file_patterns}")
         return matching, file_info
 
-    def delete_packages_by_pattern(self, dataset_name_filter: Optional[str] = None,
+    def delete_packages_by_pattern(self, dataset_prefix: Optional[str] = None,
                                     dataset_list: Optional[List[str]] = None,
-                                    file_pattern: str = "*",
+                                    file_patterns: Optional[List[str]] = None,
                                     force_reload: bool = False) -> Tuple[int, int, int]:
         """
-        Delete packages matching a pattern across multiple datasets.
+        Delete packages matching pattern(s) across multiple datasets.
 
         Args:
-            dataset_name_filter: Regex pattern to match dataset names (e.g., 'PennEPI.*', 'PennEPI000[0-9]{2}')
-            dataset_list: Explicit list of dataset names to process (takes precedence over pattern)
-            file_pattern: Glob pattern for files to delete (e.g., '*_ieeg.json')
+            dataset_prefix: Prefix to match dataset names (e.g., 'PennEPI' matches all starting with PennEPI)
+            dataset_list: Explicit list of dataset names to process (takes precedence over prefix)
+            file_patterns: List of glob patterns for files to delete (e.g., ['*_ieeg.json', '*_clinical.csv'])
             force_reload: If True, bypass cache when fetching packages
 
         Returns:
             Tuple of (datasets_processed, files_deleted, files_failed)
         """
-        if not dataset_list and not dataset_name_filter:
-            raise ValueError("Must provide either dataset_list or dataset_name_filter")
+        if not dataset_list and not dataset_prefix:
+            raise ValueError("Must provide either dataset_list or dataset_prefix")
+
+        if not file_patterns:
+            file_patterns = ["*"]
 
         logger.info("="*60)
         logger.info("DELETE PACKAGES BY PATTERN")
         logger.info("="*60)
-        logger.info(f"Dataset filter: {dataset_name_filter or 'N/A'}")
+        logger.info(f"Dataset prefix: {dataset_prefix or 'N/A'}")
         logger.info(f"Dataset list: {dataset_list or 'N/A'}")
-        logger.info(f"File pattern: {file_pattern}")
+        logger.info(f"File patterns: {file_patterns}")
         logger.info(f"Dry run: {self.dry_run}")
         logger.info("="*60)
 
@@ -528,9 +531,9 @@ class PennsieveDatasetManager:
                 # Explicit list mode
                 if ds_name in dataset_list:
                     datasets_to_process.append(ds)
-            elif dataset_name_filter:
-                # Pattern mode
-                if re.match(dataset_name_filter, ds_name):
+            elif dataset_prefix:
+                # Prefix mode - simple startswith check
+                if ds_name.startswith(dataset_prefix):
                     datasets_to_process.append(ds)
 
         if not datasets_to_process:
@@ -558,11 +561,11 @@ class PennsieveDatasetManager:
 
             # Find matching packages
             matching_pkgs, file_info = self.find_packages_by_pattern(
-                ds_id, ds_name, file_pattern, force_reload=force_reload
+                ds_id, ds_name, file_patterns, force_reload=force_reload
             )
 
             if not matching_pkgs:
-                logger.info(f"  No files matching '{file_pattern}' found")
+                logger.info(f"  No files matching {file_patterns} found")
                 datasets_processed += 1
                 continue
 

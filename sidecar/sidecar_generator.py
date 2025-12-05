@@ -13,7 +13,7 @@ from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
-DATASET_RUN = ["PennEPI00005","PennEPI00021","PennEPI00041","PennEPI00042","PennEPI00044","PennEPI00052","PennEPI00061","PennEPI00211","PennEPI00212"]
+DATASET_RUN = ["PennEPI00006"]
 
 data_map = {}
 
@@ -563,7 +563,7 @@ def main():
         createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
         createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
         created_electrodes = createElectrodesSidecar(penn_epi_name)
-        if penn_epi_name in DATASET_RUN:
+        if created_electrodes:
             print(f"{penn_epi_name} Was electrodes created: {created_electrodes}")
         if created_electrodes:
             createCoordsSidecar(penn_epi_name)

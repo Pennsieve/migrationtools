@@ -13,6 +13,8 @@ import sys
 import json
 import logging
 import requests
+import fnmatch
+import re
 from typing import Dict, List, Set, Optional, Tuple
 from helpers import *
 from dataclasses import dataclass
@@ -406,7 +408,189 @@ class PennsieveDatasetManager:
         return lookup
     
     
-    def move_files_to_archive(self, archive_id: str, package_ids: List[str], 
+    def delete_package(self, package_id: str, package_name: str = "") -> bool:
+        """
+        Delete a single package by its node ID.
+
+        Args:
+            package_id: The node ID of the package to delete
+            package_name: Optional name for logging purposes
+
+        Returns:
+            True if deletion succeeded (or dry run), False otherwise
+        """
+        display_name = package_name or package_id
+
+        if self.dry_run:
+            logger.info(f"  [DRY-RUN] Would delete: {display_name}")
+            return True
+
+        url = f"{self.base_url}/data/delete?api_key={self.api_key}"
+        payload = {"things": [package_id]}
+
+        try:
+            response = requests.post(url, json=payload, headers={"accept": "*/*", "content-type": "application/json"})
+            response.raise_for_status()
+            logger.info(f"  Deleted: {display_name}")
+            return True
+        except requests.RequestException as e:
+            logger.error(f"  Failed to delete {display_name}: {e}")
+            return False
+
+    def find_packages_by_pattern(self, dataset_id: str, dataset_name: str,
+                                  file_pattern: str, force_reload: bool = False) -> Tuple[List[Dict], Dict[str, str]]:
+        """
+        Find packages matching a filename pattern (glob-style).
+
+        Args:
+            dataset_id: The dataset ID
+            dataset_name: The dataset name (for caching)
+            file_pattern: Glob pattern to match (e.g., '*_ieeg.json', '*.tsv')
+            force_reload: If True, bypass cache and fetch from network
+
+        Returns:
+            Tuple of (list of matching packages, dict of node_id -> filename)
+        """
+        logger.info(f"Finding packages matching '{file_pattern}' in dataset {dataset_name}")
+
+        # Get packages (with caching)
+        packages = load_data(f"package_{dataset_name}", force_reload=force_reload)
+        if packages is None:
+            logger.info("  Fetching packages from network...")
+            packages = get_dataset_packages(dataset_id)
+            save_data(packages, f"package_{dataset_name}")
+
+        matching = []
+        file_info = {}
+
+        for pkg in packages:
+            content = pkg.get('content', {})
+            name = content.get('name', '')
+            node_id = content.get('nodeId')
+            pkg_type = content.get('packageType', '')
+
+            # Skip collections and deleted files
+            if pkg_type == "Collection":
+                continue
+            if name.startswith("__DELETED__"):
+                continue
+
+            # Match against pattern
+            if fnmatch.fnmatch(name, file_pattern):
+                matching.append(pkg)
+                file_info[node_id] = name
+                logger.debug(f"  Matched: {name}")
+
+        logger.info(f"  Found {len(matching)} packages matching '{file_pattern}'")
+        return matching, file_info
+
+    def delete_packages_by_pattern(self, dataset_name_filter: Optional[str] = None,
+                                    dataset_list: Optional[List[str]] = None,
+                                    file_pattern: str = "*",
+                                    force_reload: bool = False) -> Tuple[int, int, int]:
+        """
+        Delete packages matching a pattern across multiple datasets.
+
+        Args:
+            dataset_name_filter: Regex pattern to match dataset names (e.g., 'PennEPI.*', 'PennEPI000[0-9]{2}')
+            dataset_list: Explicit list of dataset names to process (takes precedence over pattern)
+            file_pattern: Glob pattern for files to delete (e.g., '*_ieeg.json')
+            force_reload: If True, bypass cache when fetching packages
+
+        Returns:
+            Tuple of (datasets_processed, files_deleted, files_failed)
+        """
+        if not dataset_list and not dataset_name_filter:
+            raise ValueError("Must provide either dataset_list or dataset_name_filter")
+
+        logger.info("="*60)
+        logger.info("DELETE PACKAGES BY PATTERN")
+        logger.info("="*60)
+        logger.info(f"Dataset filter: {dataset_name_filter or 'N/A'}")
+        logger.info(f"Dataset list: {dataset_list or 'N/A'}")
+        logger.info(f"File pattern: {file_pattern}")
+        logger.info(f"Dry run: {self.dry_run}")
+        logger.info("="*60)
+
+        # Get all datasets
+        all_datasets = load_data("datasets")
+        if all_datasets is None:
+            logger.info("Fetching datasets from network...")
+            all_datasets = get_all_datasets()
+            save_data(all_datasets, "datasets")
+
+        # Filter datasets
+        datasets_to_process = []
+        for ds in all_datasets:
+            ds_name = ds.get('content', {}).get('name', '')
+
+            if dataset_list:
+                # Explicit list mode
+                if ds_name in dataset_list:
+                    datasets_to_process.append(ds)
+            elif dataset_name_filter:
+                # Pattern mode
+                if re.match(dataset_name_filter, ds_name):
+                    datasets_to_process.append(ds)
+
+        if not datasets_to_process:
+            logger.warning("No datasets matched the filter criteria")
+            return (0, 0, 0)
+
+        logger.info(f"Found {len(datasets_to_process)} datasets to process")
+
+        # Safety confirmation summary
+        logger.info("\nDatasets to process:")
+        for ds in datasets_to_process:
+            logger.info(f"  - {ds.get('content', {}).get('name')}")
+
+        total_deleted = 0
+        total_failed = 0
+        datasets_processed = 0
+
+        for ds in datasets_to_process:
+            ds_id = ds.get('content', {}).get('id')
+            ds_name = ds.get('content', {}).get('name')
+
+            logger.info(f"\n{'='*40}")
+            logger.info(f"Processing: {ds_name}")
+            logger.info(f"{'='*40}")
+
+            # Find matching packages
+            matching_pkgs, file_info = self.find_packages_by_pattern(
+                ds_id, ds_name, file_pattern, force_reload=force_reload
+            )
+
+            if not matching_pkgs:
+                logger.info(f"  No files matching '{file_pattern}' found")
+                datasets_processed += 1
+                continue
+
+            # Delete each matching package
+            for pkg in matching_pkgs:
+                node_id = pkg.get('content', {}).get('nodeId')
+                name = file_info.get(node_id, node_id)
+
+                if self.delete_package(node_id, name):
+                    total_deleted += 1
+                else:
+                    total_failed += 1
+
+            datasets_processed += 1
+
+        # Summary
+        logger.info(f"\n{'='*60}")
+        logger.info("DELETION SUMMARY")
+        logger.info(f"{'='*60}")
+        logger.info(f"Datasets processed: {datasets_processed}")
+        logger.info(f"Files deleted: {total_deleted}")
+        logger.info(f"Files failed: {total_failed}")
+        if self.dry_run:
+            logger.info("\n[DRY-RUN MODE] No actual deletions were performed")
+
+        return (datasets_processed, total_deleted, total_failed)
+
+    def move_files_to_archive(self, archive_id: str, package_ids: List[str],
                               file_info: Dict[str, str]) -> bool:
         """Move multiple packages to the archive folder"""
         if not package_ids:

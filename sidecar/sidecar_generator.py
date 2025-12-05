@@ -13,7 +13,7 @@ from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
-DATASET_RUN = ["PennEPI00006"]
+DATASET_RUN = ["PREVeNT Trial 5VA9"]
 
 data_map = {}
 
@@ -303,30 +303,56 @@ def createSessionsDataSidecar(name,key,data_map):
 
     session_sidecar.save(data=sessions_data, output_dir=f"output/{name}/primary/sub-{name}")
 
-def createParticipantsTSVSidecar(name,key,data_map):
-    print(data_map)
-    try:
-        sex = data_map[name].get("sex","n/a")
-    except KeyError as e:
-        sex = "n/a"
+def createParticipantsTSVSidecar(name, key, data_map):
+    print(name)
     pariticpant_data = [
             {
-                "participant_id": f"sub-{name}",
-                "species": SPECIES,
-                "population": POPULATION,
-                "sex": sex, 
-                "MRI_lesion":data_map[name].get("mri_lesion","n/a"),
-                "MRI_lesionType": data_map[name].get("mri_lesionType","n/a"),
-                'MRI_lesionDetails':data_map[name].get("mri_lesionDetails","n/a"),
-                "ieeg_isFocal": data_map[name].get("ieeg_isFocal","n/a"),
-                "age_intervention": data_map[name].get("age_intervention","n/a"),
-                "intervention_type": data_map[name].get("intervention_type","n/a"),
-                "intervention_location":data_map[name].get("intervention_location","n/a"),
-                "seizure_Engel12m":data_map[name].get("seizure_Engel12m","n/a"),
-                "seizure_Engel24m":data_map[name].get("seizure_Engel24m","n/a"),
-                "fiveSenseScore":data_map[name].get("fiveSenseScore","n/a"),
+                "participant_id": f"{name}",
+                "site_code": data_map[name].get("site_code", "n/a"),
+                "NDAR_GUID": data_map[name].get("NDAR_GUID", "n/a"),
+                "species": data_map[name].get("species", "n/a"),
+                "population": data_map[name].get("population", "n/a"),
+                "sex": data_map[name].get("sex", "n/a"),
+                # Genetic fields
+                "tsc_gene": data_map[name].get("tsc_gene", "n/a"),
+                "tsc_exon": data_map[name].get("tsc_exon", "n/a"),
+                "tsc_gene_mutation_detail": data_map[name].get("tsc_gene_mutation_detail", "n/a"),
+                "chr_location": data_map[name].get("chr_location", "n/a"),
+                "tsc_mutation": data_map[name].get("tsc_mutation", "n/a"),
+                "tsc_pchange": data_map[name].get("tsc_pchange", "n/a"),
+                "variant_type": data_map[name].get("variant_type", "n/a"),
+                "variant_consequence": data_map[name].get("variant_consequence", "n/a"),
+                "variant_pathogenicity": data_map[name].get("variant_pathogenicity", "n/a"),
+                "variant_interpretation": data_map[name].get("variant_interpretation", "n/a"),
+                "zygosity": data_map[name].get("zygosity", "n/a"),
+                "reference_sequence": data_map[name].get("reference_sequence", "n/a"),
+                # Treatment fields
+                "prv_treatment_grp": data_map[name].get("prv_treatment_grp", "n/a"),
+                "prv_randomization_cohort": data_map[name].get("prv_randomization_cohort", "n/a"),
+                # Epilepsy outcome fields
+                "drug_resistant_epilepsy_24m": data_map[name].get("drug_resistant_epilepsy_24m", "n/a"),
+                "epilepsy_control_24m": data_map[name].get("epilepsy_control_24m", "n/a"),
+                # Seizure history - 12m
+                "had_any_seizures_12m": data_map[name].get("had_any_seizures_12m", "n/a"),
+                "had_focal_seizures_12m": data_map[name].get("had_focal_seizures_12m", "n/a"),
+                "had_infantile_spasms_12m": data_map[name].get("had_infantile_spasms_12m", "n/a"),
+                # Seizure history - 24m
+                "had_any_seizures_24m": data_map[name].get("had_any_seizures_24m", "n/a"),
+                "had_focal_seizures_24m": data_map[name].get("had_focal_seizures_24m", "n/a"),
+                "had_infantile_spasms_24m": data_map[name].get("had_infantile_spasms_24m", "n/a"),
+                # Seizure history - 36m
+                "had_any_seizures_36m": data_map[name].get("had_any_seizures_36m", "n/a"),
+                "had_focal_seizures_36m": data_map[name].get("had_focal_seizures_36m", "n/a"),
+                "had_infantile_spasms_36m": data_map[name].get("had_infantile_spasms_36m", "n/a"),
+                # Developmental assessments - Bayley
+                "bayleyiii_12m": data_map[name].get("bayleyiii_12m", "n/a"),
+                "bayleyiii_24m": data_map[name].get("bayleyiii_24m", "n/a"),
+                "bayleyiii_36m": data_map[name].get("bayleyiii_36m", "n/a"),
+                # Developmental assessments - Vineland
+                "vinelandii_12m": data_map[name].get("vinelandii_12m", "n/a"),
+                "vinelandii_24m": data_map[name].get("vinelandii_24m", "n/a"),
+                "vinelandii_36m": data_map[name].get("vinelandii_36m", "n/a"),
             },
-
         ]
     pariticpant_sidecar = ParticipantsSideCarTSV(filename=f"participants.tsv")
     pariticpant_sidecar.save(data=pariticpant_data, output_dir=f"output/{name}")
@@ -540,33 +566,32 @@ def main():
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
     
-    migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
+#    migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 
     for ds in datasets:
         original_name = ds["content"]["name"]
         
 
-        if not original_name.startswith("PennEPI"):
+        if not original_name.startswith("PREVeNT"):
             continue
 
-        penn_epi_name = original_name
-        print(f"\nProcessing dataset: {penn_epi_name}")
-        if penn_epi_name not in DATASET_RUN:
-            print(f"Skipping dataset: {penn_epi_name}")
+        print(f"\nProcessing dataset: {original_name}")
+        if  original_name not in DATASET_RUN:
+            print(f"Skipping dataset: {original_name}")
             continue
-        eps_name = penn_epi_to_eps(original_name)
+        #eps_name = penn_epi_to_eps(original_name)
 
-        ceateDatasetDescription(penn_epi_name)
-        createParticipantsSidecar(penn_epi_name)
-        createParticipantsTSVSidecar(penn_epi_name,eps_name,migration_subject_map)
-        createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
-        createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
-        created_electrodes = createElectrodesSidecar(penn_epi_name)
-        if created_electrodes:
-            print(f"{penn_epi_name} Was electrodes created: {created_electrodes}")
-        if created_electrodes:
-            createCoordsSidecar(penn_epi_name)
+        #ceateDatasetDescription(penn_epi_name)
+        #createParticipantsSidecar(penn_epi_name)
+        createParticipantsTSVSidecar(original_name.split()[-1:][0],"eps_name",migration_subject_map)
+        #createSessionsDataSidecar(penn_epi_name,eps_name,migration_subject_map)
+        #createIEEGDataSidecar(penn_epi_name,eps_name,migration_hardware_data_map)
+        #created_electrodes = createElectrodesSidecar(penn_epi_name)
+        #if created_electrodes:
+        #    print(f"{penn_epi_name} Was electrodes created: {created_electrodes}")
+        #if created_electrodes:
+        #    createCoordsSidecar(penn_epi_name)
         
 
 def rename(name):

@@ -1,3 +1,5 @@
+import argparse
+
 from DatsetDescriptionSidecar import DatasetDescriptionSidecar
 from SessionsSidecar import SessionSidecar
 from ParticipantsSidecar import ParticipantsSidecar
@@ -14,6 +16,14 @@ from pathlib import Path
 from typing import Dict, Any
 
 DATASET_RUN = ["PREVeNT Trial 5VA9"]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Generate BIDS sidecars for datasets')
+    dataset_group = parser.add_mutually_exclusive_group()
+    dataset_group.add_argument('--all', action='store_true', help='Process all datasets (ignore DATASET_RUN filter)')
+    dataset_group.add_argument('--datasets', nargs='+', help='Specific dataset names to process')
+    return parser.parse_args()
 
 data_map = {}
 
@@ -556,8 +566,8 @@ def merge_csvs_by_eps(csv_path_1: str, csv_path_2: str) -> Dict[str, Dict[str, A
     return merged
 
 def main():
+    args = parse_args()
 
-    
     if not os.path.exists("cache"):
         print("Fetching channels")
         make_channels()
@@ -565,21 +575,35 @@ def main():
     print("Fetching all datasets...")
     datasets = get_all_datasets()
     print(f"Total datasets fetched: {len(datasets)}")
-    
+
 #    migration_hardware_data_map = multi_dataset_read_csv_to_dict(Path(MASTER_MIGRATION_METADATA))
     migration_subject_map = read_csv_to_dict(Path(MASTER_SUBJECT_METADATA))
 
+    # Determine which datasets to process
+    if args.all:
+        datasets_to_run = None  # None means run all
+        print("Running on ALL datasets")
+    elif args.datasets:
+        datasets_to_run = args.datasets
+        print(f"Running on specified datasets: {datasets_to_run}")
+    else:
+        datasets_to_run = DATASET_RUN
+        print(f"Running on DATASET_RUN: {datasets_to_run}")
+
     for ds in datasets:
         original_name = ds["content"]["name"]
-        
+
 
         if not original_name.startswith("PREVeNT"):
             continue
 
         print(f"\nProcessing dataset: {original_name}")
-        if  original_name not in DATASET_RUN:
+
+        # Skip if not in our target list (unless --all was specified)
+        if datasets_to_run is not None and original_name not in datasets_to_run:
             print(f"Skipping dataset: {original_name}")
             continue
+
         #eps_name = penn_epi_to_eps(original_name)
 
         #ceateDatasetDescription(penn_epi_name)

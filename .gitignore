@@ -1,0 +1,14 @@
+origin/
+input/
+output/
+logs/
+legacy_codes/
+
+*.log
+*.csv
+*.xlsx
+*.txt
+*.tsv
+*.edf
+*.xml
+*.json

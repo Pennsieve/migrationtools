@@ -20,7 +20,7 @@ from helpers import get_all_datasets, get_dataset_packages, generate_new_name, A
 PENNSIEVE_API_BASE = "https://api.pennsieve.io"
 HEADERS = {"accept": "*/*", "content-type": "application/json"}
 
-DRY_RUN = True  # True = print actions only, no PUT requests
+DRY_RUN = False  # True = print actions only, no PUT requests
 TARGET_DATASETS = ["*"]  # ["*"] for all, [] for none
 
 
@@ -92,7 +92,7 @@ def add_team_collaborators_to_datasets(dry_run: bool = True):
         Dictionary with results of the operation including successes and failures.
     """
     TEAM_ID = "N:team:c164398f-aaa3-4531-a284-6e30352f4e97"
-    TEAM_ROLE = "manager"
+    TEAM_ROLE = "editor"
 
     print(f"{'[DRY RUN] ' if dry_run else ''}Fetching all datasets...")
     datasets = get_all_datasets()
@@ -179,4 +179,4 @@ def add_team_collaborators_to_datasets(dry_run: bool = True):
     return results
 
 if __name__ == "__main__":
-     add_team_collaborators_to_datasets(dry_run=True)
+     add_team_collaborators_to_datasets(dry_run=False)

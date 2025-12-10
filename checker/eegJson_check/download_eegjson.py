@@ -10,18 +10,18 @@ import requests
 from pathlib import Path
 
 # Add parent directories to path for imports
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-CHECKER_DIR = os.path.dirname(SCRIPT_DIR)
-ROOT_DIR = os.path.dirname(CHECKER_DIR)
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__)) 
+CHECKER_DIR = os.path.dirname(SCRIPT_DIR) 
+ROOT_DIR = os.path.dirname(CHECKER_DIR) 
 sys.path.insert(0, ROOT_DIR)
 
 from helpers import get_all_datasets, get_dataset_packages, API_KEY
 
 # Output path
-OUTPUT_DIR = os.path.join(CHECKER_DIR, "output", "eegJson_check", "download_eegJson")
+OUTPUT_DIR = os.path.join(CHECKER_DIR, "output", "eegJson_check", "eegjson_downloaded")
 
-DRY_RUN = False  # True = print actions only, no downloads
-TARGET_DATASETS = ["*"]  # ["*"] for all PREVeNT, or list specific dataset names
+DRY_RUN = True  # True = print actions only, no downloads
+TARGET_DATASETS = [r"PREVeNT Trial *"]  # ["*"] for all PREVeNT, or list specific dataset names
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
@@ -30,7 +30,7 @@ def should_process_dataset(dataset_name: str) -> bool:
     """Check if dataset should be processed based on TARGET_DATASETS."""
     if not dataset_name:
         return False
-    if not dataset_name.startswith("PREVeNT"):
+    if not dataset_name.startswith(r"PREVeNT Trial *"):
         return False
     if TARGET_DATASETS == ["*"]:
         return True

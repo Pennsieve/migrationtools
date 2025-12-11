@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+REMEBER TO UPDATE API KEY IN THIS DOC IF NEED TO RUN IT!!!!!
+
 Delete Packages Script
 
 Delete files/packages matching a pattern across Pennsieve datasets.
@@ -15,9 +17,12 @@ Examples:
 
     # Dry run: see what would be deleted across all datasets starting with "PennEPI"
     python delete_packages.py --prefix "PennEPI" --file-pattern "*_ieeg.json"
+    python checker/delete_check/delete_packages.py --prefix "PREVeNT" --file-pattern "*_eeg.json" 
 
     # Actually delete (requires --execute flag)
     python delete_packages.py --datasets PennEPI00089 --file-pattern "*_ieeg.json" --execute
+    python checker/delete_check/delete_packages.py --prefix "PREVeNT" --file-pattern "*_eeg.json" --execute --force-reload
+    python checker/delete_check/delete_packages.py --prefix "PREVeNT" --file-pattern "*_channels.tsv" --execute --force-reload
 
     # Force reload packages from network (bypass cache)
     python delete_packages.py --datasets PennEPI00089 --file-pattern "*.tsv" --force-reload
@@ -103,7 +108,7 @@ Examples:
         logger.setLevel(logging.DEBUG)
 
     # Get API key
-    PENNSIEVE_API_KEY = "eyJraWQiOiJwcjhTaWE2dm9FZTcxNyttOWRiYXRlc3lJZkx6K3lIdDE4RGR5aGVodHZNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIwNzYyZjdlZS1kZTIwLTRkYzUtODVlMS1iMTQ2NGZhNjE1ZjAiLCJkZXZpY2Vfa2V5IjoidXMtZWFzdC0xXzk4ZTZmMGU2LTU4ZGYtNDkxOS05ZDczLTIwYzE1ZDZmNjIxZCIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX2IxTnl4WWNyMCIsImNsaWVudF9pZCI6IjY3MG1vN3NpODFwY2Mzc2Z1YjdvMTkxNGQ4Iiwib3JpZ2luX2p0aSI6Ijc1YWEyNjBhLTkxZTUtNDM2NS1iMGY2LTA0Y2Y4ZTEyYTdhOCIsImV2ZW50X2lkIjoiMDg2ZWYxNjYtNjY2OC00NzNkLTk2ZTEtODIzODQ5Y2MzNGQzIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTc2NDk0OTA1NywiZXhwIjoxNzY0OTY4Mzk0LCJpYXQiOjE3NjQ5NjQ3OTQsImp0aSI6IjBmZmRlZTA4LTQ3ZmEtNGIyOC1hYWM4LWFhNWVkZjNjYjg4YSIsInVzZXJuYW1lIjoiMDc2MmY3ZWUtZGUyMC00ZGM1LTg1ZTEtYjE0NjRmYTYxNWYwIn0.fyD8U285nBLta2az7X7GEO8AhKUQMs74h8SI9vep9SkCsciq2xm4YxJ_tjKWC90mv7CsSwmlRddHEyw88Koe-_7Ns89PZAhavKodnOkFsaEEEh3YDIoB-4H_mDVFPBDMc9wgYbrwvi25pkPUyckxtA9YbGGu9fkYlJGB7wqTDmZCdtbVy3Hd-6VFX4dGxQa-6LFZBX_NzZ_y43y-c9roiwgKSDGRn76bYOX5OELkcN1wjrx4rshqAOafL3LmpQi4AUa0ii_PdZTWS_e_ogf8uykPqrdxcWIj21t4GDw9M1wI10rsblvu-xcVltKh94SZ1kZfMYMplHL6O6X9qprh4Q"
+    PENNSIEVE_API_KEY = "eyJraWQiOiJwcjhTaWE2dm9FZTcxNyttOWRiYXRlc3lJZkx6K3lIdDE4RGR5aGVodHZNPSIsImFsZyI6IlJTMjU2In0.eyJzdWIiOiIwNzYyZjdlZS1kZTIwLTRkYzUtODVlMS1iMTQ2NGZhNjE1ZjAiLCJkZXZpY2Vfa2V5IjoidXMtZWFzdC0xXzk4ZTZmMGU2LTU4ZGYtNDkxOS05ZDczLTIwYzE1ZDZmNjIxZCIsImlzcyI6Imh0dHBzOlwvXC9jb2duaXRvLWlkcC51cy1lYXN0LTEuYW1hem9uYXdzLmNvbVwvdXMtZWFzdC0xX2IxTnl4WWNyMCIsImNsaWVudF9pZCI6IjY3MG1vN3NpODFwY2Mzc2Z1YjdvMTkxNGQ4Iiwib3JpZ2luX2p0aSI6ImU0NjM0YTJiLWIyMGQtNDI0OS1hMWM3LTk4YjQwZWQzMjk3ZiIsImV2ZW50X2lkIjoiODBkODE3NWItNThiOC00Mzc1LWE1NzgtY2UwYWNhZmYxMzBhIiwidG9rZW5fdXNlIjoiYWNjZXNzIiwic2NvcGUiOiJhd3MuY29nbml0by5zaWduaW4udXNlci5hZG1pbiIsImF1dGhfdGltZSI6MTc2NTQ4MzIzNywiZXhwIjoxNzY1NDg2ODM3LCJpYXQiOjE3NjU0ODMyMzcsImp0aSI6IjMyYzUzODE2LTNkNmQtNDgwOC04MzcyLTczMGViMTk0NTQ0YyIsInVzZXJuYW1lIjoiMDc2MmY3ZWUtZGUyMC00ZGM1LTg1ZTEtYjE0NjRmYTYxNWYwIn0.bu6yoEzq3CgL7EaUv9_9XmI6lzhEnIvLrDkKpnNQMjbCRVUKCZDkQeZX4bXK7FfdZ1SSyiXuHFreygCs-GOllXMV4jx1QeSGrGa5c9jx40Oeh7U6lA5p_yMA0_7HFk3Lu4mwofWRXJcD7uHmY2AAjGDJDSrGAEKntqqSxg6Cq_YpI0_8vjZsKx54GVzj3Z3IA5IvtjSbTPq7VPWMrFSHGgfz-0qUKYzdoONn4HF8IC4-0vJm0Amr6B7Kpd8hmFCDsIJyRagXiDdzdqf0j8-sEj917PUskb0bXbx0QJYKYRfFHXU0ZeXfNNdxhOVIyPneJTQOdpjI-3QX5TYJij4cMg"
     api_key = PENNSIEVE_API_KEY
     # api_key = os.environ.get('PENNSIEVE_API_KEY')
     if not api_key:

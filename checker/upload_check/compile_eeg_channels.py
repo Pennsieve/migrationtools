@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 # Base paths
 BASE_DIR = Path(__file__).parent.parent.parent
-EEGJSON_DIR = BASE_DIR / "checker/output/eegJson_check/eegjson_aligned"
+EEGJSON_DIR = BASE_DIR / "checker/output/eegJson_check/eegjson_added"
 CHANNELSTSV_DIR = BASE_DIR / "checker/output/channelTsv_check/channelstsv_matched"
 OUTPUT_DIR = BASE_DIR / "checker/output/upload_check/compiled_eegchannels"
 

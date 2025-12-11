@@ -34,6 +34,19 @@ GREEN = "\033[92m"
 RESET = "\033[0m"
 
 
+def normalize_csv_value(value: str) -> str:
+    """
+    Normalize CSV values: if empty, 'n/a', or 'nan', return 'n/a'.
+    Otherwise return the stripped value.
+    """
+    if not value:
+        return "n/a"
+    stripped = value.strip().lower()
+    if stripped in ("", "n/a", "nan", "na", "none"):
+        return "n/a"
+    return value.strip()
+
+
 def load_session_metadata(csv_path: str) -> dict:
     """
     Load CSV and create mapping: (subject_id, session) -> HeadCircumference value.
@@ -56,7 +69,7 @@ def load_session_metadata(csv_path: str) -> dict:
             # Composite key: subject_id|session
             key = f"{subject_id}|{session}"
             session_metadata[key] = {
-                "HeadCircumference": row.get("HeadCircumference", "").strip(),
+                "HeadCircumference": normalize_csv_value(row.get("Headcircumference", "")),
             }
     return session_metadata
 
@@ -163,11 +176,7 @@ def add_head_circumference():
             skipped.append({"file": filename, "reason": f"No metadata for {lookup_key}"})
             continue
 
-        head_circumference = csv_meta.get("HeadCircumference", "")
-        if not head_circumference:
-            print(f"  Warning: No HeadCircumference found for '{lookup_key}' ({filename})")
-            skipped.append({"file": filename, "reason": f"No HeadCircumference for {lookup_key}"})
-            continue
+        head_circumference = csv_meta.get("HeadCircumference", "n/a")
 
         print(f"\n  File: {filename}")
         print(f"    Subject: {subject_id}, Session: {session}")

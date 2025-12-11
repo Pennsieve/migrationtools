@@ -34,6 +34,19 @@ GREEN = "\033[92m"
 RESET = "\033[0m"
 
 
+def normalize_csv_value(value: str) -> str:
+    """
+    Normalize CSV values: if empty, 'n/a', or 'nan', return 'n/a'.
+    Otherwise return the stripped value.
+    """
+    if not value:
+        return "n/a"
+    stripped = value.strip().lower()
+    if stripped in ("", "n/a", "nan", "na", "none"):
+        return "n/a"
+    return value.strip()
+
+
 def load_session_metadata(csv_path: str) -> dict:
     """
     Load CSV and create mapping: (subject_id, session) -> metadata dict.
@@ -57,12 +70,12 @@ def load_session_metadata(csv_path: str) -> dict:
             # Composite key: subject_id|session
             key = f"{subject_id}|{session}"
             session_metadata[key] = {
-                "scheme": row.get("scheme", "").strip(),
-                "site_F11": row.get("site_F11", "").strip(),
-                "F11SYSTEM": row.get("F11SYSTEM", "").strip(),
-                "ManufacturersModelName": row.get("ManufacturersModelName", "").strip(),
-                "hardwarefilters_min": row.get("hardwarefilters_min", "").strip(),
-                "hardwarefilters_max": row.get("hardwarefilters_max", "").strip(),
+                "scheme": normalize_csv_value(row.get("scheme", "")),
+                "site_F11": normalize_csv_value(row.get("site_F11", "")),
+                "F11SYSTEM": normalize_csv_value(row.get("F11SYSTEM", "")),
+                "ManufacturersModelName": normalize_csv_value(row.get("ManufacturersModelName", "")),
+                "hardwarefilters_min": normalize_csv_value(row.get("hardwarefilters_min", "")),
+                "hardwarefilters_max": normalize_csv_value(row.get("hardwarefilters_max", "")),
             }
     return session_metadata
 
@@ -152,44 +165,43 @@ def apply_csv_fixes_to_json(json_data: dict, csv_metadata: dict) -> list:
       JSON ManufacturerModelName <- CSV ManufacturersModelName
       JSON HardwareFilters.min (Hz) <- CSV hardwarefilters_min
       JSON HardwareFilters.max (Hz) <- CSV hardwarefilters_max
+
+    Note: Empty, 'n/a', or 'nan' values in CSV are normalized to 'n/a' in JSON.
     """
     changes = []
 
     # InstitutionName <- site_F11
-    csv_institution = csv_metadata.get("site_F11", "")
-    if csv_institution:
-        old_val = str(json_data.get("InstitutionName", "")).strip()
-        if old_val != csv_institution:
-            json_data["InstitutionName"] = csv_institution
-            changes.append({
-                "field": "InstitutionName",
-                "old_value": old_val,
-                "new_value": csv_institution
-            })
+    csv_institution = csv_metadata.get("site_F11", "n/a")
+    old_val = str(json_data.get("InstitutionName", "")).strip()
+    if old_val != csv_institution:
+        json_data["InstitutionName"] = csv_institution
+        changes.append({
+            "field": "InstitutionName",
+            "old_value": old_val,
+            "new_value": csv_institution
+        })
 
     # Manufacturer <- F11SYSTEM
-    csv_manufacturer = csv_metadata.get("F11SYSTEM", "")
-    if csv_manufacturer:
-        old_val = str(json_data.get("Manufacturer", "")).strip()
-        if old_val != csv_manufacturer:
-            json_data["Manufacturer"] = csv_manufacturer
-            changes.append({
-                "field": "Manufacturer",
-                "old_value": old_val,
-                "new_value": csv_manufacturer
-            })
+    csv_manufacturer = csv_metadata.get("F11SYSTEM", "n/a")
+    old_val = str(json_data.get("Manufacturer", "")).strip()
+    if old_val != csv_manufacturer:
+        json_data["Manufacturer"] = csv_manufacturer
+        changes.append({
+            "field": "Manufacturer",
+            "old_value": old_val,
+            "new_value": csv_manufacturer
+        })
 
     # ManufacturerModelName <- ManufacturersModelName
-    csv_model = csv_metadata.get("ManufacturersModelName", "")
-    if csv_model:
-        old_val = str(json_data.get("ManufacturerModelName", "")).strip()
-        if old_val != csv_model:
-            json_data["ManufacturerModelName"] = csv_model
-            changes.append({
-                "field": "ManufacturerModelName",
-                "old_value": old_val,
-                "new_value": csv_model
-            })
+    csv_model = csv_metadata.get("ManufacturersModelName", "n/a")
+    old_val = str(json_data.get("ManufacturerModelName", "")).strip()
+    if old_val != csv_model:
+        json_data["ManufacturerModelName"] = csv_model
+        changes.append({
+            "field": "ManufacturerModelName",
+            "old_value": old_val,
+            "new_value": csv_model
+        })
 
     # HardwareFilters min/max
     # Ensure HardwareFilters structure exists
@@ -200,27 +212,25 @@ def apply_csv_fixes_to_json(json_data: dict, csv_metadata: dict) -> list:
 
     hw_bandwidth = json_data["HardwareFilters"]["Hardware bandwidth filter"]
 
-    csv_min = csv_metadata.get("hardwarefilters_min", "")
-    if csv_min:
-        old_val = str(hw_bandwidth.get("min (Hz)", "")).strip()
-        if old_val != csv_min:
-            hw_bandwidth["min (Hz)"] = csv_min
-            changes.append({
-                "field": "HardwareFilters.min (Hz)",
-                "old_value": old_val,
-                "new_value": csv_min
-            })
+    csv_min = csv_metadata.get("hardwarefilters_min", "n/a")
+    old_val = str(hw_bandwidth.get("min (Hz)", "")).strip()
+    if old_val != csv_min:
+        hw_bandwidth["min (Hz)"] = csv_min
+        changes.append({
+            "field": "HardwareFilters.min (Hz)",
+            "old_value": old_val,
+            "new_value": csv_min
+        })
 
-    csv_max = csv_metadata.get("hardwarefilters_max", "")
-    if csv_max:
-        old_val = str(hw_bandwidth.get("max (Hz)", "")).strip()
-        if old_val != csv_max:
-            hw_bandwidth["max (Hz)"] = csv_max
-            changes.append({
-                "field": "HardwareFilters.max (Hz)",
-                "old_value": old_val,
-                "new_value": csv_max
-            })
+    csv_max = csv_metadata.get("hardwarefilters_max", "n/a")
+    old_val = str(hw_bandwidth.get("max (Hz)", "")).strip()
+    if old_val != csv_max:
+        hw_bandwidth["max (Hz)"] = csv_max
+        changes.append({
+            "field": "HardwareFilters.max (Hz)",
+            "old_value": old_val,
+            "new_value": csv_max
+        })
 
     return changes
 
@@ -323,10 +333,7 @@ def update_eeg_jsons():
             print(f"  Warning: No metadata found for '{lookup_key}' ({filename})")
             continue
 
-        scheme = csv_meta.get("scheme", "")
-        if not scheme:
-            print(f"  Warning: No scheme found for session '{session}' ({filename})")
-            continue
+        scheme = csv_meta.get("scheme", "n/a")
 
         print(f"\n  File: {filename}")
         print(f"    Subject: {subject_id}, Session: {session}")

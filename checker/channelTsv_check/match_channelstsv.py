@@ -24,6 +24,19 @@ OUTPUT_MATCHED_DIR = os.path.join(CHECKER_DIR, "output", "channelTsv_check", "ch
 DRY_RUN = False  # True = print actions only, no file operations
 
 
+def normalize_csv_value(value: str) -> str:
+    """
+    Normalize CSV values: if empty, 'n/a', or 'nan', return 'n/a'.
+    Otherwise return the stripped value.
+    """
+    if not value:
+        return "n/a"
+    stripped = value.strip().lower()
+    if stripped in ("", "n/a", "nan", "na", "none"):
+        return "n/a"
+    return value.strip()
+
+
 def load_metadata():
     """
     Load EEG metadata CSV, using the second row as the header.
@@ -65,8 +78,8 @@ def load_metadata():
 
         pid1 = row[pid1_idx].strip()
         session = row[session_idx].strip()
-        hw_min = row[hw_min_idx].strip()
-        hw_max = row[hw_max_idx].strip()
+        hw_min = normalize_csv_value(row[hw_min_idx])
+        hw_max = normalize_csv_value(row[hw_max_idx])
 
         if pid1 and session:
             key = (pid1, session)

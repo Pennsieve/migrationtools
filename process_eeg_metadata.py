@@ -143,6 +143,7 @@ def process_eeg_metadata():
         'ManufacturersModelName',
         'hardwarefilters_min',
         'hardwarefilters_max'
+        'Headcircumference'
     ]
 
     # Filter: EEG upload status == "uploaded" AND FileName (Original) starts with "PRV"

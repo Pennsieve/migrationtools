@@ -1,9 +1,9 @@
 from jsonschema import Draft202012Validator
 from typing import Dict, Any
-from Sidecar import Sidecar
+from Sidecar import JSONSidecar
 
 
-class DatasetDescriptionSidecar(Sidecar):
+class DatasetDescriptionSidecar(JSONSidecar):
     """
     Represents the dataset_description.json BIDS sidecar.
 
@@ -13,8 +13,8 @@ class DatasetDescriptionSidecar(Sidecar):
     - Warns on missing recommended or unknown extra fields
     """
 
-    default_filename = "dataset_description.json"
-    default_bids_path = "bids_root/"
+    filename = "dataset_description.json"
+    bids_path = "bids_root/"
 
     REQUIRED_FIELDS = {"Name", "BIDSVersion"}
     RECOMMENDED_FIELDS = {"HEDVersion", "DatasetType", "License", "Authors"}
@@ -40,9 +40,13 @@ class DatasetDescriptionSidecar(Sidecar):
         "Funding": [],
         "EthicsApprovals": [],
         "ReferencesAndLinks": [],
-        "DatasetDOI": "doi:10.xxxxx/placeholder",
-        "GeneratedBy": [{"Name": "Sidecar Generator", "Version": "1.0.0"}],
-        "Description": "Dataset automatically generated from provided metadata.",
+            "GeneratedBy": [{
+                "Name": "iEEG-BIDS Migration Tool",
+                "Version": "1.0.0",
+                "CodeURL": "https://github.com/Pennsieve/migrationtools",
+                "Description": "Dataset automatically generated from provided metadata.",
+            }]
+        
     }
 
     SCHEMA = {

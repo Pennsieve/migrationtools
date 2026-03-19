@@ -13,7 +13,7 @@ from channels_tsv_generator import make_channels
 from pathlib import Path
 from typing import Dict, Any
 
-DATASET_RUN = ["PennEPI00006"]
+DATASET_RUN = ["PennEPI00214","PennEPI00163","PennEPI00097","PennEPI00089","PennEPI00081","PennEPI00080","PennEPI00078","PennEPI00077","PennEPI00075","PennEPI00074","PennEPI00071","PennEPI00070","PennEPI00069","PennEPI00067","PennEPI00066","PennEPI00065","PennEPI00064","PennEPI00063","PennEPI00060","PennEPI00059","PennEPI00058","PennEPI00057","PennEPI00056","PennEPI00054","PennEPI00053","PennEPI00051","PennEPI00050","PennEPI00048","PennEPI00047","PennEPI00046","PennEPI00045","PennEPI00043","PennEPI00040","PennEPI00039","PennEPI00038","PennEPI00037","PennEPI00036","PennEPI00035","PennEPI00034","PennEPI00033","PennEPI00032","PennEPI00031","PennEPI00030","PennEPI00029","PennEPI00028","PennEPI00027","PennEPI00026","PennEPI00024","PennEPI00023","PennEPI00020","PennEPI00019","PennEPI00018","PennEPI00013","PennEPI00011","PennEPI00010","PennEPI00008","PennEPI00006","PennEPI00004"]
 
 data_map = {}
 
@@ -69,15 +69,18 @@ def createEEGSidecar(name,data_map):
 def createElectrodesSidecar(name):
 
     electrodes_payload = []
-    electrode_data = load_data(f"electrode_data_{name}", True)
-    electrode_text = load_data(f"electrode_txt_data_{name}",True)
+    electrode_data = load_data(f"electrode_data_{name}")
+    electrode_text = load_data(f"electrode_txt_data_{name}")
 
-    if electrode_data != None:
+    if electrode_data is not None:
         for data in electrode_data:
             label = data.get("labels","")
-            raw_dimensions = electrode_text[label]["group"]
-            dimensions = raw_dimensions.split(" ")
-            dimension = f"{dimensions[1]}x{dimensions[0]}"
+            try:
+                raw_dimensions = electrode_text[label]["group"]
+                dimensions = raw_dimensions.split(" ")
+                dimension = f"{dimensions[1]}x{dimensions[0]}"
+            except (KeyError, TypeError, IndexError):
+                dimension = "n/a"
 
             electrodes_payload.append({
                 "name": label,
@@ -204,8 +207,10 @@ def createIEEGDataSidecar(name,key,data_map):
     def get_recording_duration(key, sub_key=None):
         eps_key = eps_to_penn_epi(key)
         payload = load_data("payload")
+        if payload is None:
+            return -1
         try:
-            if sub_key == None:
+            if sub_key is None:
                 return payload[eps_key]["duration"]
             else:
                 return payload[eps_key][sub_key]["duration"]

@@ -211,17 +211,19 @@ def create_model_from_template(
     dataset_id: str,
     model_name: str,
     display_name: str,
-    description: str,
-    template_version: int = 1,
+    description: str = "",
     dry_run: bool = False
 ) -> Optional[str]:
     """
     Create a model based off a template, or return existing model ID if it already exists.
 
-    POST https://api2.pennsieve.io/metadata/templates/{TEMPLATE_ID}/models?dataset_id={DATASET_ID}&version={VERSION}
+    POST https://api2.pennsieve.io/metadata/templates/{TEMPLATE_ID}/models?dataset_id={DATASET_ID}
+
+    Omitting the version parameter uses the latest template version.
+    Omitting description in the payload falls back to the template's description.
 
     Payload:
-        {"name": "...", "display_name": "...", "description": "..."}
+        {"name": "...", "display_name": "..."}
 
     Returns:
         The model ID from the response, or "dry-run-model-id" if dry run
@@ -229,13 +231,14 @@ def create_model_from_template(
     encoded_dataset_id = quote(dataset_id, safe="")
     url = (
         f"{API2_BASE_URL}/metadata/templates/{template_id}/models"
-        f"?dataset_id={encoded_dataset_id}&version={template_version}"
+        f"?dataset_id={encoded_dataset_id}"
     )
     payload = {
         "name": model_name,
         "display_name": display_name,
-        "description": description,
     }
+    if description:
+        payload["description"] = description
 
     print(f"    URL: {url}")
     print(f"    Payload: {json.dumps(payload, indent=2)}")

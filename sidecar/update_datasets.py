@@ -461,6 +461,11 @@ Examples:
   %(prog)s --api-key KEY --api-secret SECRET \\
       --datasets MyDataset \\
       --owner "N:user:xxxx-xxxx"
+
+  # Change owner for all PennEPI datasets
+  %(prog)s --api-key KEY --api-secret SECRET \\
+      --prefix PennEPI \\
+      --owner "N:user:xxxx-xxxx"
         """
     )
 
@@ -470,8 +475,10 @@ Examples:
     parser.add_argument('--api-host', default='https://api.pennsieve.io', help='API host URL')
 
     # Dataset selection
-    parser.add_argument('--datasets', nargs='+', help='Dataset names to process')
-    parser.add_argument('--all', action='store_true', dest='all_datasets', help='Process all datasets in workspace')
+    dataset_group = parser.add_mutually_exclusive_group(required=True)
+    dataset_group.add_argument('--datasets', nargs='+', help='Dataset names to process')
+    dataset_group.add_argument('--prefix', metavar='PREFIX', help='Process datasets starting with this prefix')
+    dataset_group.add_argument('--all', action='store_true', dest='all_datasets', help='Process all datasets in workspace')
 
     # Metadata options
     parser.add_argument('--description', help='Dataset description')
@@ -506,15 +513,6 @@ Examples:
     if not any([args.description, args.tags, args.readme, args.contributors, args.owner, args.banner, args.team]):
         logger.warning("No update options provided - will authenticate but take no actions")
 
-    # Validate dataset selection
-    if not args.datasets and not args.all_datasets:
-        logger.error("Must provide either --datasets or --all")
-        sys.exit(1)
-
-    if args.datasets and args.all_datasets:
-        logger.error("Cannot use both --datasets and --all")
-        sys.exit(1)
-
     if args.dry_run:
         logger.info("\n" + "="*60)
         logger.info("DRY RUN MODE - No actual changes will be made")
@@ -533,13 +531,21 @@ Examples:
     updater = DatasetUpdater(token, args.api_host, dry_run=args.dry_run, force_reload=args.force_reload)
 
     # Get dataset names to process
-    if args.all_datasets:
+    if args.datasets:
+        dataset_names = args.datasets
+    else:
         logger.info("Fetching all datasets...")
         all_datasets = updater._fetch_all_datasets()
-        dataset_names = [ds.get("content", {}).get("name") for ds in all_datasets if ds.get("content", {}).get("name")]
-        logger.info(f"Found {len(dataset_names)} datasets to process")
-    else:
-        dataset_names = args.datasets
+        if args.prefix:
+            dataset_names = [
+                ds.get("content", {}).get("name")
+                for ds in all_datasets
+                if ds.get("content", {}).get("name", "").startswith(args.prefix)
+            ]
+            logger.info(f"Found {len(dataset_names)} datasets matching prefix '{args.prefix}'")
+        else:
+            dataset_names = [ds.get("content", {}).get("name") for ds in all_datasets if ds.get("content", {}).get("name")]
+            logger.info(f"Found {len(dataset_names)} datasets to process")
 
     # Process datasets
     total = len(dataset_names)

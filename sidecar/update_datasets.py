@@ -353,7 +353,8 @@ class DatasetUpdater:
                        owner_id: Optional[str] = None,
                        team_id: Optional[str] = None,
                        team_role: str = "manager",
-                       banner_path: Optional[str] = None) -> bool:
+                       banner_path: Optional[str] = None,
+                       skip_lookup: bool = False) -> bool:
         """
         Process a single dataset with specified updates.
         Each option is independent - only updates what's explicitly provided.
@@ -369,19 +370,24 @@ class DatasetUpdater:
             team_id: Optional team ID to add as collaborator
             team_role: Role for the team (viewer, editor, manager)
             banner_path: Optional path to banner image file
+            skip_lookup: If True, treat dataset_name as a dataset ID and skip fetching datasets
         """
         logger.info(f"\n{'='*60}")
         logger.info(f"Processing dataset: {dataset_name}")
         logger.info(f"{'='*60}")
 
-        # Find dataset
-        dataset = self.find_dataset_by_name(dataset_name)
-        if not dataset:
-            logger.error(f"Dataset not found: {dataset_name}")
-            return False
+        if skip_lookup:
+            dataset_id = dataset_name
+            logger.info(f"Skipping dataset lookup; using provided dataset ID: {dataset_id}")
+        else:
+            # Find dataset
+            dataset = self.find_dataset_by_name(dataset_name)
+            if not dataset:
+                logger.error(f"Dataset not found: {dataset_name}")
+                return False
 
-        dataset_id = dataset.get("content", {}).get("id")
-        logger.info(f"Dataset ID: {dataset_id}")
+            dataset_id = dataset.get("content", {}).get("id")
+            logger.info(f"Dataset ID: {dataset_id}")
 
         success = True
         actions_taken = 0
@@ -495,6 +501,7 @@ Examples:
     # Team option
     parser.add_argument('--team', help='Team ID to add as collaborator (e.g., N:team:xxxx-xxxx)')
     parser.add_argument('--team-role', default='manager', choices=['viewer', 'editor', 'manager'], help='Role for team (default: manager)')
+    parser.add_argument('--skip-lookup', action='store_true', help='Skip GET /datasets/paginated and treat --datasets values as dataset IDs')
 
     # Banner option
     parser.add_argument('--banner', help='Path to banner image file (png, jpg, gif)')
@@ -563,7 +570,8 @@ Examples:
             owner_id=args.owner,
             team_id=args.team,
             team_role=args.team_role,
-            banner_path=args.banner
+            banner_path=args.banner,
+            skip_lookup=args.skip_lookup
         ):
             succeeded += 1
         else:
